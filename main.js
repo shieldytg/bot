@@ -99,7 +99,7 @@ async function main(config) {
                 newGroupText.replace("{owner}",".");
             
             await GHbot.sendMessage(user.id, chat.id, newGroupText,{parse_mode:"HTML",
-                reply_markup :{inline_keyboard:[[{text: l[chat.lang].ADV_JOIN_CHANNEL, url: "https://t.me/Galerifsyrl"}]]}
+                reply_markup :{inline_keyboard:[[{text: l[chat.lang].ADV_JOIN_CHANNEL, url: "https://t.me/wallchannelsuka"}]]}
             })
             GHbot.sendMessage(user.id, chat.id, l[chat.lang].SETUP_GUIDE,{parse_mode:"HTML",
                 reply_markup :{inline_keyboard :[[
