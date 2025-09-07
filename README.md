@@ -2,7 +2,7 @@
 
 Open-Source re-creation of telegram group manager Group Help in NodeJS based on [node-telegram-api](https://github.com/yagop/node-telegram-bot-api).
 
-An official instance of bot is running on [@LibreGroupHelpBot](https://t.me/shieldy_robot)
+An official instance of bot is running on [@shieldy_robot](https://t.me/shieldy_robot)
 
 
 ## Installation:
