@@ -24,4 +24,4 @@ Now you should be ready to run Shieldy using:
 node index.js
 ```
 
-By @maneltop1k && @Drift_Sherif
+By @Drift_Sherif && @Maneltop1k
