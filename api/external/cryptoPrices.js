@@ -3,10 +3,12 @@
  */
 
 const https = require('https');
-isLoaded = false;
-topCrypto = {}; //BTC : {object}
-topCryptoArray = [];
-fiatRates = {}; //EUR : rateUsd
+const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+
+let isLoaded = false;
+let topCrypto = {}; // symbol : {object}
+let topCryptoArray = [];
+let fiatRates = {}; // currency_code : rate
 
 function bodyGet(url)
 {return new Promise((resolve, reject)=>{
@@ -33,36 +35,61 @@ function bodyGet(url)
 
 })}
 
-async function updatePrices()
-{try {
-    
-    var request = await bodyGet("https://api.coincap.io/v2/assets?limit=2000");
-    if(!request) return;
-    topCryptoArray = request.data;
-    
-    if(!(topCryptoArray.length > 0)) return;
+async function updatePrices() {
+    try {
+        // Fetch top 250 cryptocurrencies by market cap
+        const coinsData = await bodyGet(
+            `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1`
+        );
+        
+        if (!coinsData || !Array.isArray(coinsData)) return;
+        
+        // Map CoinGecko data to match the expected format
+        topCryptoArray = coinsData.map(coin => ({
+            id: coin.id,
+            symbol: coin.symbol.toUpperCase(),
+            name: coin.name,
+            priceUsd: coin.current_price ? coin.current_price.toString() : null,
+            marketCapUsd: coin.market_cap ? coin.market_cap.toString() : null,
+            volumeUsd24Hr: coin.total_volume ? coin.total_volume.toString() : null,
+            supply: coin.circulating_supply ? coin.circulating_supply.toString() : null,
+            maxSupply: coin.max_supply ? coin.max_supply.toString() : null,
+            changePercent24Hr: coin.price_change_percentage_24h ? 
+                coin.price_change_percentage_24h.toString() : null,
+            vwap24Hr: coin.high_24h && coin.low_24h ? 
+                ((coin.high_24h + coin.low_24h) / 2).toString() : null,
+            explorer: `https://www.coingecko.com/en/coins/${coin.id}`
+        }));
+        
+        if (topCryptoArray.length === 0) return;
 
-    topCrypto = {};
-    topCryptoArray.forEach((crypto, index) => {
-        topCrypto[crypto.symbol] = topCryptoArray[index];
-    });
+        // Update the lookup object
+        topCrypto = {};
+        topCryptoArray.forEach(crypto => {
+            topCrypto[crypto.symbol] = crypto;
+        });
 
+        // Fetch fiat exchange rates
+        const ratesData = await bodyGet(`${COINGECKO_API}/exchange_rates`);
+        if (!ratesData || !ratesData.rates) return;
 
-    request = await bodyGet("https://api.coincap.io/v2/rates?type=fiat");
-    if(!request) return;
-    newFiatRates = request.data;
+        // Convert CoinGecko rates to the expected format
+        fiatRates = {};
+        Object.entries(ratesData.rates).forEach(([currency, data]) => {
+            if (data.type === 'fiat') {
+                // Convert from BTC value to USD value
+                fiatRates[currency.toUpperCase()] = 1 / data.value;
+            }
+        });
 
-    fiatRates = {};
-    newFiatRates.forEach((rate, index) => {
-        if(rate.type == "crypto") return;
-        fiatRates[rate.symbol] = Number(rate.rateUsd);
-    })
+        // Ensure USD is always available with rate 1
+        fiatRates['USD'] = 1;
 
-    if(!isLoaded) isLoaded = true;
-
-} catch (error) {
-    console.log("An occurred on cryptoPrices.js/updatePrices()")
-}}
+        if (!isLoaded) isLoaded = true;
+    } catch (error) {
+        console.error("Error in cryptoPrices.js/updatePrices():", error);
+    }
+}
 
 function cutPrice(number)
 {
@@ -73,10 +100,10 @@ function cutPrice(number)
     return Number(result);
 }
 
-function convert(price, currency)
-{
-    var fiat = getCurrencyPrice(currency);
-    return ( (price/1) * (1/fiat) );
+function convert(price, currency) {
+    const rate = getCurrencyPrice(currency);
+    if (!rate) return price; // If currency not found, return original price
+    return price * rate; // rate is already in terms of USD per unit of currency
 }
 
 function humanPrice(number)
@@ -119,6 +146,7 @@ function supplyToBlock(currentSupply) {
 
     return currentBlock;
 }
+
 /////////////////
 
 async function load()
@@ -165,10 +193,19 @@ function getTop(height)
  * @param {string} symbol 
  * @return {CoincapCrypto}
  */
-function getCoin(symbol)
-{
-    if(!topCrypto[symbol]) return false;
-    return topCrypto[symbol];
+function getCoin(symbol) {
+    // Try exact match first
+    if (topCrypto[symbol]) return topCrypto[symbol];
+    
+    // Try case-insensitive search
+    const upperSymbol = symbol.toUpperCase();
+    for (const [key, value] of Object.entries(topCrypto)) {
+        if (key.toUpperCase() === upperSymbol) {
+            return value;
+        }
+    }
+    
+    return false;
 }
 
 function getCurrencyPrice(currency)
@@ -176,13 +213,16 @@ function getCurrencyPrice(currency)
     return Number(fiatRates[currency]);
 }
 
-function getCoinPrice(symbol, currency)
-{
-    currency = currency || "USD";
-
-    var price = Number(getCoin(symbol).priceUsd);
-    price = convert(price, currency);
-
+function getCoinPrice(symbol, currency) {
+    currency = (currency || 'USD').toUpperCase();
+    const coin = getCoin(symbol);
+    if (!coin || coin.priceUsd === null) return 'N/A';
+    
+    let price = Number(coin.priceUsd);
+    if (currency !== 'USD') {
+        price = convert(price, currency);
+    }
+    
     return humanPrice(cutPrice(price));
 }
 
