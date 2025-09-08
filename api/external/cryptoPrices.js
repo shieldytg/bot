@@ -4,45 +4,97 @@
 
 const https = require('https');
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+const COINGECKO_RETRY_DELAY = 5000; // 5 seconds delay between retries
+let lastRequestTime = 0;
 
 let isLoaded = false;
 let topCrypto = {}; // symbol : {object}
 let topCryptoArray = [];
 let fiatRates = {}; // currency_code : rate
 
-function bodyGet(url)
-{return new Promise((resolve, reject)=>{
-
-    https.get(url, res => {
-
-        var data ="";
-        res.on('data', chunk => {
-            data+=chunk;
-        });
-
-        res.on('end', () => {
-            try {
-                resolve(JSON.parse(data))
-            } catch (error) {
-                reject(error)
+async function bodyGet(url, retries = 3) {
+    return new Promise((resolve, reject) => {
+        const makeRequest = async (attempt = 1) => {
+            // Add delay if needed to respect rate limits
+            const now = Date.now();
+            const timeSinceLastRequest = now - lastRequestTime;
+            if (timeSinceLastRequest < 1000) { // 1 second between requests
+                await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
             }
-        });
+            lastRequestTime = Date.now();
 
-    }).on('error', err => {
-        resolve(false);
-        return;
+            const req = https.get(url, { headers: { 'User-Agent': 'ShieldyBot/1.0' } }, res => {
+                let data = [];
+                
+                // Check if response is JSON
+                const contentType = res.headers['content-type'] || '';
+                if (!contentType.includes('application/json')) {
+                    if (attempt < retries) {
+                        console.warn(`[CryptoPrices] Received non-JSON response (${contentType}), retrying... (${attempt}/${retries})`);
+                        setTimeout(() => makeRequest(attempt + 1), COINGECKO_RETRY_DELAY * attempt);
+                        return;
+                    }
+                    reject(new Error(`Expected JSON but got ${contentType}`));
+                    return;
+                }
+
+                res.on('data', chunk => data.push(chunk));
+
+                res.on('end', () => {
+                    try {
+                        const response = Buffer.concat(data).toString();
+                        // Basic check if response looks like HTML (error page)
+                        if (response.trim().startsWith('<!DOCTYPE') || response.trim().startsWith('<html>')) {
+                            throw new Error('Received HTML error page instead of JSON');
+                        }
+                        resolve(JSON.parse(response));
+                    } catch (error) {
+                        if (attempt < retries) {
+                            console.warn(`[CryptoPrices] Error parsing JSON (attempt ${attempt}/${retries}):`, error.message);
+                            setTimeout(() => makeRequest(attempt + 1), COINGECKO_RETRY_DELAY * attempt);
+                        } else {
+                            reject(error);
+                        }
+                    }
+                });
+            });
+
+            req.on('error', error => {
+                if (attempt < retries) {
+                    console.warn(`[CryptoPrices] Request error (attempt ${attempt}/${retries}):`, error.message);
+                    setTimeout(() => makeRequest(attempt + 1), COINGECKO_RETRY_DELAY * attempt);
+                } else {
+                    reject(error);
+                }
+            });
+
+            // Set a timeout for the request
+            req.setTimeout(10000, () => {
+                req.destroy();
+                if (attempt < retries) {
+                    console.warn(`[CryptoPrices] Request timeout (attempt ${attempt}/${retries})`);
+                    setTimeout(() => makeRequest(attempt + 1), COINGECKO_RETRY_DELAY * attempt);
+                } else {
+                    reject(new Error('Request timeout'));
+                }
+            });
+        };
+
+        makeRequest();
     });
-
-})}
+}
 
 async function updatePrices() {
     try {
         // Fetch top 250 cryptocurrencies by market cap
         const coinsData = await bodyGet(
-            `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1`
+            `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=24h`
         );
         
-        if (!coinsData || !Array.isArray(coinsData)) return;
+        if (!coinsData || !Array.isArray(coinsData)) {
+            console.error('[CryptoPrices] Invalid or empty response from CoinGecko API');
+            return false;
+        }
         
         // Map CoinGecko data to match the expected format
         topCryptoArray = coinsData.map(coin => ({
