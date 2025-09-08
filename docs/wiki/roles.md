@@ -8,17 +8,17 @@ You can see what roles are assigned to users on your group using `/staff`
 
 The most important role is the [Administrator](https://telegram.org/blog/supergroups), an user can get this role with `/admin` command (advised) or [directly trough your group settings](https://telegram.org/blog/admin-revolution#admin-rights), by fact it's the role directly correlated with the acutal admin from telegram side, you can change admin title using `/title`
 
-LibreGroupHelp will bind the telegram admin permissions to match with the correlated commands and functions
+Shieldy will bind the telegram admin permissions to match with the correlated commands and functions
 
-If for example by telegram settings your admin can remove users, he will automatically obtain this LibreGroupHelp commands: `/kick`, `/warn`, `/mute`, `/ban`
+If for example by telegram settings your admin can remove users, he will automatically obtain this Shieldy commands: `/kick`, `/warn`, `/mute`, `/ban`
 
 ---
 
 ## Bot roles
 
-LibreGroupHelp aims to provide a more granular control about permissions of your users and staffers, a granularity that trough telegram admins function can't be reached, that's why you can give the role `/muter` to allow a staffer to use just the `/mute` command, 
+Shieldy aims to provide a more granular control about permissions of your users and staffers, a granularity that trough telegram admins function can't be reached, that's why you can give the role `/muter` to allow a staffer to use just the `/mute` command, 
 
-Currently these are the roles implemented by default from LibreGroupHelp:
+Currently these are the roles implemented by default from Shieldy:
 
 - **👑 Founder**    
   The role avaiable only for group owner    

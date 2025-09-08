@@ -29,7 +29,7 @@ The calculation of user permissions is made by levels of priority based on this 
   <br/><br/>
 
 - **👮 Admin permissions**  
-  Permissions inhered from administrator telegram settings, if an admin can do an action trough telegram, he will be able to do so also trough LibreGroupHelp    
+  Permissions inhered from administrator telegram settings, if an admin can do an action trough telegram, he will be able to do so also trough Shieldy    
   **🔧 How to edit:** `/admin`, `/perms` or telegram settings
   <br/><br/>
   

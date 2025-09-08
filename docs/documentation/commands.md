@@ -1,6 +1,6 @@
 # Create a command
 
-LibreGroupHelp offers multi-language command support, when the user sends a command LGH will try to resolve the command trying first to translate the raw one to the command code (usually starting with `COMMAND_`), then, if registered, their function will be ran
+Shieldy offers multi-language command support, when the user sends a command LGH will try to resolve the command trying first to translate the raw one to the command code (usually starting with `COMMAND_`), then, if registered, their function will be ran
 
 
 ## Create command lang-code
@@ -40,7 +40,7 @@ Now add our own command
 "/showcase" : "COMMAND_EXAMPLE",
 "/anotheralias" : "COMMAND_EXAMPLE",
 "COMMAND_EXAMPLE" : "example",
-"CMDDESC_EXAMPLE" : "/{name} or /showcase or /anotheralias\nThese are just commands to show an example on LibreGroupHelp Wiki"
+"CMDDESC_EXAMPLE" : "/{name} or /showcase or /anotheralias\nThese are just commands to show an example on Shieldy Wiki"
 "/rules": "COMMAND_RULES",
 "/regulation" : "COMMAND_RULES",
 "COMMAND_RULES" : "rules",

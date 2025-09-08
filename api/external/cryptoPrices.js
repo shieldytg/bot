@@ -164,7 +164,7 @@ function isAvaiable()
 
 /**
  * Returns an object representing a cryptocurrency.
- * @typedef {Object} CoincapCrypto representing a cryptocurrency.
+ * @typedef {Object} coingeckoCrypto representing a cryptocurrency.
  * @property {string} id - Cryptocurrency ID.
  * @property {string} rank - Cryptocurrency rank.
  * @property {string} symbol - Cryptocurrency symbol.
@@ -182,7 +182,7 @@ function isAvaiable()
 
 /**
  * @param {string} symbol 
- * @return {CoincapCrypto}
+ * @return {coingeckoCrypto}
  */
 function getTop(height)
 {
@@ -191,7 +191,7 @@ function getTop(height)
 
 /**
  * @param {string} symbol 
- * @return {CoincapCrypto}
+ * @return {coingeckoCrypto}
  */
 function getCoin(symbol) {
     // Try exact match first
@@ -281,8 +281,6 @@ function halvingLeftBlocks()
     return leftBlocks
 }
 
-
-//https://api.coincap.io/v2/assets?limit=2000
 
 module.exports = {
     load, isAvaiable,

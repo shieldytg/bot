@@ -13,13 +13,13 @@ Verify NodeJS installation with `node -v`
 
 Set your bot token using configuration file, look at [config documentation](https://sp3rick.github.io/GroupHelp/wiki/configuration/).
 
-Open a terminal inside LibreGroupHelp folder and run this commands
+Open a terminal inside Shieldy folder and run this commands
 
 ```bash
 npm install
 ```
 
-Now you should be ready to run LibreGroupHelp using:
+Now you should be ready to run Shieldy using:
 ```bash
 node index.js
 ```

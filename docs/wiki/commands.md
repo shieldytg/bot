@@ -54,7 +54,7 @@ Some commands can use the **`*`** prefix (e.g., `/*rules`, `/*perms`) to force a
 ### Help Commands
 
 - **/help**  
-  Show a link to the LibreGroupHelp Wiki.   
+  Show a link to the Shieldy Wiki.   
   **Code:** `COMMAND_HELP`   
   **Note:** Private only     
 

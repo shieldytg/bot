@@ -3,7 +3,7 @@
 We need to expect button clicks and messages from users to be able to perform most of actions for our bot
 
 
-That's why we need an unified hirarchy of how callbacks data are organized, on LibreGroupHelp they are avaiable for buttons on `cb.data` and `msg.waitingReply` for messages, we will talk about how to expect user messages soon, but first you should follow the right hirachy so main.js can set right variables for [LGH Events](events.md)
+That's why we need an unified hirarchy of how callbacks data are organized, on Shieldy they are avaiable for buttons on `cb.data` and `msg.waitingReply` for messages, we will talk about how to expect user messages soon, but first you should follow the right hirachy so main.js can set right variables for [LGH Events](events.md)
 
 </br>
 

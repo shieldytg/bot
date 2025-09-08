@@ -112,7 +112,7 @@ The down below lines are generated with [jsdoc2md](https://github.com/jsdoc2md/j
 <dd><p>media.js settings, if LGHPunish is disabled the object will be deleted (undefinied)</p>
 </dd>
 <dt><a href="#CustomChat">CustomChat</a> : <code>Object</code></dt>
-<dd><p>Additional chat elements for chat object by LibreGroupHelp</p>
+<dd><p>Additional chat elements for chat object by Shieldy</p>
 </dd>
 <dt><a href="#LGHChat">LGHChat</a> : <code><a href="https://github.com/yagop/node-telegram-bot-api/blob/master/doc/api.md">TelegramBot.</a>Chat</code> | <code><a href="#CustomChat">CustomChat</a></code></dt>
 <dd><p>Full LGH chat object given by LGHBot events, custom items avaiable if working about a group</p>
@@ -181,7 +181,7 @@ The down below lines are generated with [jsdoc2md](https://github.com/jsdoc2md/j
 
 | Param | Type | Description |
 | --- | --- | --- |
-| LibreGHelp | [<code>LibreGHelp</code>](#LibreGHelp) | Libre Group Help telegram bot handler |
+| LibreGHelp | [<code>LibreGHelp</code>](#LibreGHelp) | Shieldy telegram bot handler |
 
 <a name="LGHInterface+GHbot"></a>
 
@@ -780,7 +780,7 @@ media.js settings, if LGHPunish is disabled the object will be deleted (undefini
 <a name="CustomChat"></a>
 
 ## CustomChat : <code>Object</code>
-Additional chat elements for chat object by LibreGroupHelp
+Additional chat elements for chat object by Shieldy
 
 **Kind**: global typedef  
 **Properties**

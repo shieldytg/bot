@@ -279,7 +279,7 @@ const PermissionStatus = {
 
 // LGHCHAT COMPLETING
 /**
- * @typedef {Object} CustomChat - Additional chat elements for chat object by LibreGroupHelp
+ * @typedef {Object} CustomChat - Additional chat elements for chat object by Shieldy
  * @property {LGHAdminList|null} admins - array with known admins objects (user data anonymized)
  * @property {String|null} lang - current chat lang
  * @property {String|null} currency - currency of chat, default to USD
@@ -404,7 +404,7 @@ testObject()
 /**
  * @class
  * @classdesc
- * @param {LibreGHelp} LibreGHelp - Libre Group Help telegram bot handler
+ * @param {LibreGHelp} LibreGHelp - Shieldy telegram bot handler
  */
 class LGHInterface {
     constructor(LibreGHelp) {

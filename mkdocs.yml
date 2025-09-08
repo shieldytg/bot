@@ -1,7 +1,7 @@
-site_name: LibreGroupHelp Wiki
-site_url: https://sp3rick.github.io/GroupHelp
-repo_url: https://github.com/Sp3rick/GroupHelp
-repo_name: Sp3rick/GroupHelp
+site_name: Shieldy Wiki
+site_url: https://shieldybot.github.io/bot
+repo_url: https://github.com/Sp3rick/Shieldy
+repo_name: Sp3rick/Shieldy
 
 theme:
   name: material

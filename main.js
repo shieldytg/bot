@@ -53,7 +53,7 @@ async function main(config) {
      * @param {TelegramBot.Metadata} metadata 
      * @description
      * handles telegram raw messages and return various
-     * ready to use LibreGroupHelp objects
+     * ready to use Shieldy objects
      * @returns {handleMessageReturn}
      */
     async function handleMessage(msg, metadata){ try {

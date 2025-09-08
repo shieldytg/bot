@@ -1,8 +1,8 @@
-# LibreGroupHelp
+# Shieldy
 
 Open-Source re-creation of telegram group manager Group Help in NodeJS based on [node-telegram-api](https://github.com/yagop/node-telegram-bot-api).
 
-An official instance of bot is running on [@LibreGroupHelpBot](https://t.me/LibreGroupHelpBot)
+An official instance of bot is running on [@shieldy_robot](https://t.me/shieldy_robot)
 
 ## Installation:
 
@@ -12,13 +12,13 @@ Verify NodeJS installation with `node -v`
 
 Set your bot token using configuration file, look at [config documentation](configuration.md).
 
-Open a terminal inside LibreGroupHelp folder and run this commands
+Open a terminal inside Shieldy folder and run this commands
 
 ```bash
 npm install
 ```
 
-Now you should be ready to run LibreGroupHelp using:
+Now you should be ready to run Shieldy using:
 ```bash
 node index.js
 ```
@@ -82,12 +82,12 @@ node index.js
 
 ## Updating
 
-To update LibreGroupHelp you need to backup ./database folder and ./config.json, then repeat installation process and paste there again both file and folder, you may need to add some config.json parameters manually if has been added
+To update Shieldy you need to backup ./database folder and ./config.json, then repeat installation process and paste there again both file and folder, you may need to add some config.json parameters manually if has been added
 
 ## Contribute
 
-[Documentation](../documentation/) is the section you are looking for if you want to contribute to LibreGroupHelp
+[Documentation](../documentation/) is the section you are looking for if you want to contribute to Shieldy
 
 ## Ask a question
 
-If you have any questions about LibreGroupHelp, feel free to open an issue or ask directly in our telegram group [@LGHChat](https://t.me/LGHChat).
+If you have any questions about Shieldy, feel free to open an issue or ask directly in our telegram group [@LGHChat](https://t.me/LGHChat).

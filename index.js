@@ -8,7 +8,7 @@ const cp = require("./api/external/cryptoPrices.js");
 const config = JSON.parse( fs.readFileSync( __dirname + "/config.json" ) );
 
 console.log("Starting...")
-console.log( "Libre group help current version: " + global.LGHVersion )
+console.log( "Shieldy current version: " + global.LGHVersion )
 
 function print(text)
 {
@@ -93,7 +93,7 @@ async function main()
     process.on('SIGTERM', quitFunc); // `kill` command
 
 
-    console.log("#LibreGroupHelp started#")
+    console.log("#Shieldy started#")
 
 
 

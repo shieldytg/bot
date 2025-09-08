@@ -16,7 +16,7 @@ function main(args)
 module.exports = main;
 ```
 
-[Database](GHBot.md/#LGHDatabase) is the core of LibreGroupHelp to store chat and users data, as to the privacy implications of that we aim to minimize the amount of sensitive data there and anyway we keep in mind that the user should be able to remove any trace of him there
+[Database](GHBot.md/#LGHDatabase) is the core of Shieldy to store chat and users data, as to the privacy implications of that we aim to minimize the amount of sensitive data there and anyway we keep in mind that the user should be able to remove any trace of him there
 
 ## Database usage
 

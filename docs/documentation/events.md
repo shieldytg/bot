@@ -22,7 +22,7 @@ GHBot.onEditedMessageText( (msg, chat, user) => { console.log(msg) } )
 
 ##Chat data
 
-So how [GHBot](GHBot.md/#LGHInterface) enchanches events for LibreGroupHelp more than using the raw [TGBot](https://github.com/yagop/node-telegram-bot-api/blob/master/doc/api.md)?
+So how [GHBot](GHBot.md/#LGHInterface) enchanches events for Shieldy more than using the raw [TGBot](https://github.com/yagop/node-telegram-bot-api/blob/master/doc/api.md)?
 
 First at all, it allow us to get already a full chat object from the database, thus giving you the full chat configuration
 
