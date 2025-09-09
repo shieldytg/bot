@@ -1,6 +1,6 @@
 {
-    "botToken" : "7511313291:AAFU_NVFR_pKuiHCXTmzu7RRz9i5viFD4IE",
-    "botStaff" : [ "7511313291" ],
+    "botToken" : "BOT_TOKEN",
+    "botStaff" : [ "owner_id" ],
     "deleteChatDataAfterBotRemove" : false,
     "overwriteChatDataIfReAddedToGroup" : false,
     "allowExternalApi" : true,
