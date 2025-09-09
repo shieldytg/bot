@@ -254,25 +254,31 @@ function updateDatabase(version, versionFile, chatsDir, usersDir)
 function getDatabase(config) {
 
     //config database directory here
-    var dbInnerDir = global.directory;
-    var dir = dbInnerDir + "/database";
-    var chatsDir = dbInnerDir + "/database/chats";
-    var usersDir = dbInnerDir + "/database/users";
+    var rootDir = global.directory;
+    var baseDatabaseDir = rootDir + "/database";
+    // Support per-bot namespaced databases
+    var namespace = config.dbNamespace ? ("/" + String(config.dbNamespace)) : "";
+    var dir = baseDatabaseDir + namespace;
+    var chatsDir = dir + "/chats";
+    var usersDir = dir + "/users";
 
     console.log( "Generating folder tree (if not already)..." )
-    var dbInnerDirFiles = fs.readdirSync( dbInnerDir );
-    if ( !dbInnerDirFiles.includes( "database" ) ){
-
-        fs.mkdirSync( dir );
-        console.log( "Generated \"database\" folder" );
-
+    // ensure base database directory exists
+    if (!fs.existsSync(baseDatabaseDir)) {
+        fs.mkdirSync(baseDatabaseDir);
+        console.log("Generated \"database\" folder");
+    }
+    // ensure namespace directory exists
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+        console.log("Generated \"database" + namespace + "\" folder");
     }
     var exhistChatsFolder = fs.existsSync(chatsDir);
     if( !exhistChatsFolder )
     {
 
         fs.mkdirSync(chatsDir);
-        console.log( "Generated \"database/chats\" folder" );
+        console.log( "Generated \""+ ("database" + namespace + "/chats") + "\" folder" );
 
     }
     var exhistUsersFolder = fs.existsSync(usersDir);
@@ -280,7 +286,7 @@ function getDatabase(config) {
     {
 
         fs.mkdirSync(usersDir);
-        console.log( "Generated \"database/users\" folder" );
+        console.log( "Generated \""+ ("database" + namespace + "/users") + "\" folder" );
 
     }
 
@@ -299,10 +305,10 @@ function getDatabase(config) {
     //TODO: IF POSSIBLE fuse database.chats and database.users functions
     var database = {
 
-        innerDir : dbInnerDir,//location where database folder should be placed (and/or generated)
-        dir : dbInnerDir + "/database",
-        chatsDir : dbInnerDir + "/database/chats",
-        usersDir : dbInnerDir + "/database/users",
+        innerDir : dir, // location where this bot's database is placed
+        dir : dir,
+        chatsDir : chatsDir,
+        usersDir : usersDir,
 
         chats :
         {

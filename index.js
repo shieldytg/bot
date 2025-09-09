@@ -6,6 +6,7 @@ const fs = require("fs");
 const TR = require("./api/tg/tagResolver.js");
 const cp = require("./api/external/cryptoPrices.js");
 const config = JSON.parse( fs.readFileSync( __dirname + "/config.json" ) );
+const botsRegistry = require("./api/botsRegistry.js");
 
 console.log("Starting...")
 console.log( "Shieldy current version: " + global.LGHVersion )
@@ -58,33 +59,54 @@ async function main()
     }
 
 
-    //load bot
+    // function to load all plugins for a bot instance
+    function loadPlugins(ctx) {
+        console.log( "Loading modules..." )
+        var directory = fs.readdirSync( __dirname + "/plugins/" );
+        directory.forEach( (fileName) => {
+            var func = require( __dirname + "/plugins/" + fileName );
+            try {
+                func(ctx)
+            } catch (error) {
+                console.log("The plugin " + fileName + " is crashed, i will turn it off and log here the error");
+                console.log(error);
+            }
+            console.log( "\tloaded " + fileName)
+        } )
+    }
+
+    // helper to start one bot instance
     var LGHelpBot = require( "./main.js" );
-    var {GHbot, TGbot, db} = await LGHelpBot(config);
-    
-
-    //load modules and run their function
-    console.log( "Loading modules..." )
-    var directory = fs.readdirSync( __dirname + "/plugins/" );
-    directory.forEach( (fileName) => {
-
-        var func = require( __dirname + "/plugins/" + fileName );
+    global.startShieldyBot = async function startShieldyBot(botToken) {
         try {
-            func({GHbot : GHbot, TGbot : TGbot, db : db, config : config})
-        } catch (error) {
-            console.log("The plugin " + fileName + " is crashed, i will turn it off and log here the error");
-            console.log(error);
+            const cloneConfig = JSON.parse(JSON.stringify(config));
+            cloneConfig.botToken = botToken;
+            // dbNamespace will be set in main.js using bot id
+            const {GHbot, TGbot, db} = await LGHelpBot(cloneConfig);
+            loadPlugins({GHbot, TGbot, db, config: cloneConfig});
+            console.log(`[index.js] Started bot instance @${TGbot.me.username} (${TGbot.me.id})`);
+            return true;
+        } catch (err) {
+            console.log("Failed to start bot instance with provided token:");
+            console.log(err);
+            return false;
         }
-        
-        console.log( "\tloaded " + fileName)
+    }
 
-    } )
+    // start primary bot
+    await global.startShieldyBot(config.botToken);
+
+    // start clones from registry (avoid starting primary twice)
+    const extraTokens = botsRegistry.getAllTokens().filter(t => t && t !== config.botToken);
+    for (const token of extraTokens) {
+        await global.startShieldyBot(token);
+    }
 
 
     
     //unload management
     var quitFunc = ()=>{
-        db.unload();
+        // best-effort save; main database unload is per instance via plugin contexts
         TR.save();
         process.exit(0);
     }

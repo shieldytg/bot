@@ -29,6 +29,9 @@ async function main(config) {
     TGbot.me = bot;
 
 
+    // assign a per-bot database namespace so each bot has isolated data
+    if (!config.dbNamespace) config.dbNamespace = String(bot.id);
+
     //load database
     var db = getDatabase(config);
     console.log("log db path");
