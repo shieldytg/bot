@@ -158,7 +158,7 @@ function main(args)
     const GHbot = new LGHelpTemplate(args);
     const {TGbot, db, config} = GHbot;
 
-    var pages = [["photo", "📸"], ["video", "🎞"], ["album", "🖼"], ["gif", "🎥"], ["voice", "🎤"], ["audio", "🎧"],
+    var pages = [["photo", "📸"], ["video", "🎞"], ["album", "🖼"], ["gif", "🎥"], ["voice", "🎤"], ["audio", "🎧"], ["nsfw","🔞"],
     ["sticker", "🃏"], ["sticker_video", "🎭"], ["dice", "🎲"], ["emoji_video", "😀"], ["emoji_premium", "👾"], ["video_note", "👁‍🗨"],
     ["file", "💾"], ["game", "🎮"], ["contact", "🏷"], ["poll", "📊"], ["location", "📍"], ["capital", "🆎"],
     ["payment", "💶"], ["via_bot", "🤖"], ["story", "📲"], ["spoiler", "🗯"], ["spoiler_media", "🌌"], ["giveaway", "🎁"],
@@ -315,16 +315,23 @@ function main(args)
     GHbot.onMessage( async (msg, chat, user) => {
 
         //identify unallowed media
-        if(msg.chat.type != "private"){(()=>{
-            if(user.perms.media == 1) return;
-
+        if(msg.chat.type != "private"){(async()=>{
+            // Early debug to confirm media messages are received by the bot
+            if (msg.photo || msg.video || msg.animation) {
+                const mediaKindDbg = msg.photo ? "Image" : (msg.video ? "Video" : (msg.animation ? "Animation" : "Unknown"));
+                console.log(`[MEDIA] Received ${mediaKindDbg} in chat ${msg.chat.id} from user ${user.id}`);
+            }
+            const mediaImmune = (user.perms && user.perms.media == 1);
             var mediaPunish = newPunishObj();
             var textPunish = newPunishObj();
             var totalPunish = newPunishObj();
             var punishList = [];
 
-            mediaPunish = sumPunishMessageMedia(mediaPunish, punishList, chat.media, msg, mapping);
-            textPunish = sumPunishEntitiesMedia(chat, msg, textPunish, punishList);
+            // If user is immune to media rules, skip regular media/text punishments but still allow NSFW checks below
+            if (!mediaImmune) {
+                mediaPunish = sumPunishMessageMedia(mediaPunish, punishList, chat.media, msg, mapping);
+                textPunish = sumPunishEntitiesMedia(chat, msg, textPunish, punishList);
+            }
 
             //album handling //NOTE: a double punishment may be still applyed in case of album and unallowed text entity, this can be fixed only with some special handler to receive album to single object 
             var isAlbum = msg.hasOwnProperty("media_group_id");
@@ -381,6 +388,32 @@ function main(args)
                 punishList.push("scheduled");
             }
 
+            // NSFW detector (photos, videos, animations) with detailed logging
+            try {
+                const hasNSFWRule = chat.media && chat.media.hasOwnProperty("nsfw") && chat.media.nsfw && (chat.media.nsfw.punishment != 0 || chat.media.nsfw.delete);
+                const hasMedia = (msg.photo && msg.photo.length) || msg.video || msg.animation;
+                const mediaKind = msg.photo ? "Image" : (msg.video ? "Video" : (msg.animation ? "Animation" : "Unknown"));
+                const threshold = 0.7;
+                if (hasNSFWRule && hasMedia) {
+                    console.log(`[NSFW] ${mediaKind} detected! Porno mod ON. Starting check… (threshold=${threshold})`);
+                    const { checkTelegramMessageMedia } = require("../api/utils/nsfwDetector.js");
+                    const res = await checkTelegramMessageMedia(GHbot.TGbot, msg, threshold);
+                    console.log(`[NSFW] Check result: checked=${!!(res && res.checked)} score=${res && typeof res.score === 'number' ? res.score.toFixed(3) : 'n/a'} isNSFW=${!!(res && res.isNSFW)}`);
+                    if (res && res.checked && res.isNSFW) {
+                        console.log(`[NSFW] Decision: NSFW content detected >= threshold. Will apply punishment=${chat.media.nsfw.punishment} delete=${!!chat.media.nsfw.delete}`);
+                        totalPunish = sumPunishObj(totalPunish, chat.media.nsfw);
+                        punishList.push("nsfw");
+                    } else {
+                        console.log(`[NSFW] Decision: Safe or below threshold. No NSFW punishment.`);
+                    }
+                } else if (hasMedia) {
+                    console.log(`[NSFW] ${mediaKind} detected, but porno mod is OFF. Skipping NSFW check.`);
+                }
+            } catch (e) {
+                console.log(`[NSFW] Error during NSFW detection: ${e && e.message ? e.message : e}`);
+                // Fail soft: do not block message flow if detector missing/ffmpeg not installed
+            }
+
 
             //punish
             if(totalPunish.punishment != 0)
@@ -389,12 +422,16 @@ function main(args)
                     punishList[index] = l[chat.lang]["MEDIA:"+type];
                 })
                 var types = punishList.join("+");
-                var reason = l[chat.lang].UNALLOWED_MEDIA_PUNISHMENT.replace("{types}", types);
+                var reason = (punishList.includes("nsfw") && l[chat.lang].NSFW_PUNISHMENT) ? l[chat.lang].NSFW_PUNISHMENT : l[chat.lang].UNALLOWED_MEDIA_PUNISHMENT.replace("{types}", types);
+                console.log(`[NSFW] Applying punishment: type(s)=${types} -> punishment=${totalPunish.punishment} time=${totalPunish.PTime||0}s reason="${reason}"`);
                 punishUser(GHbot, user.id,  msg.chat, RM.userToTarget(msg.chat, user), totalPunish.punishment, totalPunish.PTime, reason);
             }
 
             if(totalPunish.delete)
+            {
+                console.log(`[NSFW] Deleting offending message id=${msg.message_id}`);
                 GHbot.TGbot.deleteMessages(chat.id, [msg.message_id]);
+            }
 
         })()}
 

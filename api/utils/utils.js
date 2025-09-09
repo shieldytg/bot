@@ -321,8 +321,9 @@ function genSettingsKeyboard(lang, chatId)
         //[{text: l[lang].S_ADMIN_BUTTON, callback_data: "S_ADMIN_BUTTON:"+chatId},
         //{text: l[lang].S_BLOCKS_BUTTON, callback_data: "S_BLOCKS_BUTTON:"+chatId}],
 
-        [{text: l[lang].S_MEDIA_BUTTON, callback_data: "S_MEDIA_PAGE1:"+chatId}/*,
-        {text: l[lang].S_PORN_BUTTON, callback_data: "S_PORN_BUTTON:"+chatId}*/],
+        [{text: l[lang].S_MEDIA_BUTTON, callback_data: "S_MEDIA_PAGE1:"+chatId}],
+
+        [{text: l[lang].S_PORN_BUTTON, callback_data: "S_PORN_BUTTON:"+chatId}],
 
         [{text: l[lang].S_WARN_BUTTON, callback_data: "S_WARN_BUTTON:"+chatId}/*,
         {text: l[lang].S_NIGHT_BUTTON, callback_data: "S_NIGHT_BUTTON:"+chatId}*/],

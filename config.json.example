@@ -1,7 +1,7 @@
 {
     "botToken" : "BOT_TOKEN",
     "botStaff" : [ "owner_id" ],
-    "deleteChatDataAfterBotRemove" : false,
+    "deleteChatDataAfterBotRemove" : true,
     "overwriteChatDataIfReAddedToGroup" : false,
     "allowExternalApi" : true,
     "reserveLang" : "en_en",

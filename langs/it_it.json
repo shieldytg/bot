@@ -35,4 +35,7 @@
     "RULES_TITLE" : "Regolamento del Gruppo",
     "COMMAND_RULES" : "regole",
     "COMMAND_SETTINGS" : "impostazioni"
+    ,
+    "MEDIA:nsfw": "Rilevatore pornografia",
+    "NSFW_PUNISHMENT": "Rilevatore NSFW: contenuto proibito rilevato"
 }
