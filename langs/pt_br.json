@@ -132,7 +132,7 @@
   "RULES_TITLE": "Regras do grupo",
   "SET_MESSAGE_ADV": "👉🏻 <b>Envie agora a mensagem</b> que você deseja definir.\n<i>Você pode enviá-la já formatada ou usar HTML</i>",
   "SET_MEDIA_ADV": "👉🏻<b>Envie agora qualquer mídia</b> (foto, vídeo, sticker, arquivo) que você deseja definir.\n<i>Você pode digitar uma legenda.</i>",
-  "SET_BUTTONS_ADV": "👉🏻<b>Envie agora a lista de botões</b> para inserir no teclado inline, com textos e links, <b>usando este formato:</b>\n\n<code>Texto do botão - link.com\nTexto do botão - @ShieldyBot</code>\n\n• Se você quiser definir 2 ou mais botões na mesma linha, separe-os com <code>&&</code>.\n\n<b>Exemplo:</b>\n<code>Website - https://github.com/ && Canal - @username</code>",
+  "SET_BUTTONS_ADV": "👉🏻<b>Envie agora a lista de botões</b> para inserir no teclado inline, com textos e links, <b>usando este formato:</b>\n\n<code>Texto do botão - link.com\nTexto do botão - @Shieldy_robot</code>\n\n• Se você quiser definir 2 ou mais botões na mesma linha, separe-os com <code>&&</code>.\n\n<b>Exemplo:</b>\n<code>Website - https://github.com/ && Canal - @username</code>",
   "REMOVE_MESSAGE_BUTTON": "🚫 Remover mensagem",
   "REMOVE_MEDIA_BUTTON": "🚫 Remover mídia",
   "REMOVE_BUTTONS_BUTTON": "🚫 Remover Teclado",
