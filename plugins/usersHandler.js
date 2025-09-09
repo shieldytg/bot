@@ -104,7 +104,13 @@ function main(args)
                 reply_markup: {inline_keyboard:[]}
             }
 
-            var isUserAdmin = msg.chat.admins.some((admin)=>{return admin.user.id == target.id});
+            if(!target)
+            {
+                GHbot.sendMessage(user.id, msg.chat.id, l[lang].INVALID_TARGET);
+                return;
+            }
+
+            var isUserAdmin = isAdminOfChat(msg.chat, target.id);
             if(isUserAdmin)
                 options.reply_markup.inline_keyboard.push([{text:l[lang].ADMIN_PERMS_BUTTON,callback_data:"ADMINPERM_MENU:"+msg.chat.id+"?"+target.id}])
 
@@ -116,7 +122,8 @@ function main(args)
 
             try {
                 var member = await TGbot.getChatMember(msg.chat.id, target.id);
-                var memberAndUser = Object.assign({}, member.user, msg.chat.users[target.id]);
+                var extraUser = (msg.chat.users && msg.chat.users[target.id]) ? msg.chat.users[target.id] : {};
+                var memberAndUser = Object.assign({}, member.user, extraUser);
                 var func = (id) => {return GHbot.sendMessage(user.id, id, genMemberInfoText(msg.chat.lang, msg.chat, memberAndUser, member), options)};
                 sendCommandReply(private, lang, GHbot, user.id, msg.chat.id, func);
             } catch (error) {
@@ -140,7 +147,8 @@ function main(args)
 
             try {
                 var member = await TGbot.getChatMember(msg.chat.id, user.id);
-                var memberAndUser = Object.assign({}, member.user, msg.chat.users[user.id]);
+                var extraUser = (msg.chat.users && msg.chat.users[user.id]) ? msg.chat.users[user.id] : {};
+                var memberAndUser = Object.assign({}, member.user, extraUser);
                 
                 var func = (id) => {return GHbot.sendMessage(user.id, id, genMemberInfoText(msg.chat.lang, msg.chat, memberAndUser, member), options)};
                 await sendCommandReply(private, lang, GHbot, user.id, msg.chat.id, func);
@@ -169,7 +177,7 @@ function main(args)
                 options.reply_parameters.chat_id = msg.chat.id;
             } 
 
-            var isUserAdmin = msg.chat.admins.some((admin)=>{return admin.user.id == target.id});
+            var isUserAdmin = isAdminOfChat(msg.chat, target.id);
             if(isUserAdmin)
                 options.reply_markup.inline_keyboard.push([{text:l[lang].ADMIN_PERMS_BUTTON,callback_data:"ADMINPERM_MENU:"+msg.chat.id+"?"+target.id}])
             options.reply_markup.inline_keyboard.push([{text:l[lang].COMMAND_PERMS_BUTTON2,callback_data:"S_#CMDPERMS_MENU:"+msg.chat.id}]);

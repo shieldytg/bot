@@ -533,7 +533,7 @@ function genUserList(userIds, chat, db)
         else
             text+=" └ ";
 
-        var userStatus = chat.users[userId];
+        var userStatus = (chat.users && chat.users[userId]) ? chat.users[userId] : undefined;
         var userData = db.users.get(userId);
         if(userData)
             text += tag(usernameOrFullName(userData), userId);
@@ -602,7 +602,7 @@ function genMemberInfoText(lang, chat, user, member)
 
     var status = memberToChatStatus(lang, member);
     var warns = getUserWarns(chat, user.id);
-    var joinDate = chat.users[user.id] ? chat.users[user.id].firtJoin : false; //TODO: translate to date based on group UTC data
+    var joinDate = (chat.users && chat.users[user.id]) ? chat.users[user.id].firtJoin : false; //TODO: translate to date based on group UTC data
 
     text+=bold("🆔 ID: ")+code(user.id)+"\n";
     text+=bold("👱 "+l[lang].NAME+": ")+tag(user.first_name, user.id)+"\n";
@@ -611,7 +611,8 @@ function genMemberInfoText(lang, chat, user, member)
     if(user.hasOwnProperty("username"))
         text+=bold("🌐 Username: ")+"@"+user.username+"\n";
     text+=bold("👀 "+l[lang].SITUATION+": ")+status+"\n";
-    text+=bold("❕ "+l[lang].WARNS+": ")+warns+"/"+chat.warns.limit+"\n";
+    var warnsLimit = (chat.warns && typeof chat.warns.limit !== "undefined") ? chat.warns.limit : 0;
+    text+=bold("❕ "+l[lang].WARNS+": ")+warns+"/"+warnsLimit+"\n";
     text+=bold("⤵️ "+l[lang].JOIN_WHEN+": ")+(joinDate ? joinDate : l[lang].UNKNOWN)+"\n";
 
     return text;
@@ -1275,15 +1276,20 @@ async function sendCommandReply(private, lang, GHbot, userId, chatId, func)
  */
 function telegramErrorToText(lang, error)
 {
-    if(error.code != "ETELEGRAM")
-    {
-        console.log(error);
-        return;
-    }
-
     var l = global.LGHLangs;
 
-    var text = l[lang].UNKNOWN_ERROR;
+    // Default message
+    var defaultUnknown = l[lang].UNKNOWN_ERROR || "⚠️ Unknown error";
+    var text = defaultUnknown;
+
+    if(!error || !error.response || !error.response.body || !error.response.body.description)
+    {
+        // Non-telegram or malformed error: include error.message if available
+        if(error && error.message)
+            return defaultUnknown+" — "+error.message;
+        return defaultUnknown;
+    }
+
     var errDescription = error.response.body.description;
     if(errDescription.includes("user not found"))
         text = l[lang].USER_NOT_FOUND;
@@ -1309,10 +1315,14 @@ function telegramErrorToText(lang, error)
         text = "⚠️ "+errDescription;
     else
     {
+        // keep a log for unknown descriptions but still return a readable message with original description
         console.log("unknown error in telegramErrorToText(), logging it's description...")
         console.log(errDescription)
+        text = defaultUnknown+" — "+errDescription;
     }
 
+    // Ensure non-empty
+    if(typeof text !== "string" || text.trim().length === 0) text = "⚠️ Error";
     return text;
 }
 
@@ -1327,6 +1337,8 @@ function telegramErrorToText(lang, error)
 function handleTelegramGroupError(GHbot, userId, chatId, lang, error)
 {
     var text = telegramErrorToText(lang, error);
+    if(!text || (typeof text === "string" && text.trim().length === 0))
+        text = "⚠️ An unexpected error occurred. Please try again.";
     GHbot.sendMessage(userId, chatId, text);
 }
 
@@ -1337,6 +1349,7 @@ function handleTelegramGroupError(GHbot, userId, chatId, lang, error)
  */
 function getUserWarns(chat, userId)
 {
+    if(!chat.warns || !chat.warns.count) return 0;
     if(!chat.warns.count.hasOwnProperty(userId)) return 0;
     else return chat.warns.count[userId];
 }

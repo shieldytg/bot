@@ -159,11 +159,13 @@ function newUser(user, perms, adminPerms, roles, title)
  */
 function getUser(chat, userId)
 {
+    if(!chat.users) return undefined;
     return chat.users[userId];
 }
 
 function getUserRoles(chat, userId)
 {
+    if(!chat.users || !chat.users[userId]) return [];
     return chat.users[userId].roles;
 }
 
@@ -177,6 +179,7 @@ function getRoleUsers(chat, role)
  */
 function getUserPerms(chat, userId)
 {
+    if(!chat.users || !chat.users[userId]) return newPerms();
     return chat.users[userId].perms;
 }
 
@@ -185,12 +188,13 @@ function getUserPerms(chat, userId)
  */
 function getAdminPerms(chat, userId)
 {
+    if(!chat.users || !chat.users[userId]) return newPerms();
     return chat.users[userId].adminPerms;
 }
 
 function getUserLevel(chat, userId)
 {
-    if(!chat.users.hasOwnProperty(userId)) return 0;
+    if(!chat.users || !chat.users.hasOwnProperty(userId)) return 0;
     var roles = chat.users[userId].roles
 
     var level = 0;
@@ -527,7 +531,7 @@ function sumUserPerms(chat, userId)
         perms = sumPermsPriority(baseAdminPerms, perms);
     }
 
-    if(!chat.users.hasOwnProperty(userId))
+    if(!chat.users || !chat.users.hasOwnProperty(userId))
         return perms;
     var roles = orderRolesByPriority(chat.users[userId].roles, chat);
     roles.forEach((role)=>{

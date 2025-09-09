@@ -480,6 +480,14 @@ class LGHInterface {
     sendMessage(userId, chatId, text, options)
     {return new Promise( async (resolve, reject) => {
         try {
+            // Ensure text is a non-empty string to avoid Telegram 400 errors
+            if (text === undefined || text === null) text = "";
+            if (typeof text !== "string") text = String(text);
+            if (text.trim().length === 0) {
+                console.warn("GHbot.sendMessage: empty text detected, replacing with '.' to satisfy Telegram API");
+                text = ".";
+            }
+
             var result = await pushUserRequest(this.TGbot, "sendMessage", userId, chatId, text, options);
             resolve(result);
         } catch (error) {
