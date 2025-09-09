@@ -85,7 +85,7 @@ function main(args)
             l[user.lang].SETTINGS_SELECT;
 
             try {
-                var sentMessage = await TGbot.sendMessage(user.id, text, options);
+                var sentMessage = await GHbot.sendMessage(user.id, user.id, text, options);
                 var privateLink = "https://t.me/"+GHbot.TGbot.me.username;
                 var opts = {parse_mode:"HTML",chat_id:cb.chat.id,message_id:msg.message_id}
                 GHbot.editMessageText(user.id, link(l[lang].SETTINGS_SENT,privateLink),opts);

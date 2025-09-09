@@ -110,7 +110,9 @@ function callbackEvent(GHbot, db, cb, chat, user, cb_prefix, returnButtons)
         var permsL = genCommandButtonsLine(chat, "COMMAND_PERMS", prefix, chatId);
         var linkL = genCommandButtonsLine(chat, "COMMAND_LINK", prefix, chatId);
         var cryptoL = genCommandButtonsLine(chat, "COMMAND_CRYPTO", prefix, chatId);
-        buttons = [staffL, rulesL, meL, infoL, permsL, linkL, cryptoL];
+        var kickmeL = genCommandButtonsLine(chat, "COMMAND_KICKME", prefix, chatId);
+        var banmeL = genCommandButtonsLine(chat, "COMMAND_BANME", prefix, chatId);
+        buttons = [staffL, rulesL, meL, infoL, permsL, linkL, cryptoL, kickmeL, banmeL];
         //TODO: this below is going to include all commands, it's going to be added with custom roles, the return button will be avaiable also there
         //buttons.push([{text:l[lang].COMMAND_PERMS_ADMINS, callback_data:prefix+"_ROLES:"+chatId}])
         returnButtons.forEach((line) => {buttons.push(line)});

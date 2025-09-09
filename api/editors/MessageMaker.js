@@ -115,7 +115,11 @@ function callbackEvent(GHbot, db, customMessage, cb, chat, user, cb_prefix, retu
         }
 
         returnButtons.forEach(button => {
-            options.reply_markup.inline_keyboard.push( button );
+            // Normalize: if a single button object was provided, wrap it as a row
+            if (Array.isArray(button))
+                options.reply_markup.inline_keyboard.push(button);
+            else if (button && typeof button === 'object' && (button.text || button.callback_data || button.url))
+                options.reply_markup.inline_keyboard.push([button]);
         });
 
         //this is to move from media -> text only panel

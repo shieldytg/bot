@@ -488,10 +488,52 @@ class LGHInterface {
                 text = ".";
             }
 
+            // Ensure reply_markup is an object if present
+            if (options && options.reply_markup && typeof options.reply_markup !== 'object') {
+                delete options.reply_markup;
+            }
+            // Sanitize inline keyboard shape: must be Array of Arrays of buttons
+            if (options && options.reply_markup && options.reply_markup.inline_keyboard != null) {
+                let ik = options.reply_markup.inline_keyboard;
+                const looksLikeButton = (btn) => btn && typeof btn === 'object' && (btn.text || btn.callback_data || btn.url);
+                const wrapAsRow = (btn) => [btn];
+                // Case: single object -> [[btn]]
+                if (!Array.isArray(ik) && looksLikeButton(ik)) {
+                    ik = [[ik]];
+                } else if (Array.isArray(ik)) {
+                    // If it's an array, normalize each element to a row array
+                    ik = ik
+                      .map((row) => {
+                          if (Array.isArray(row)) {
+                              // ensure row contains only buttons
+                              return row.filter(looksLikeButton);
+                          }
+                          if (looksLikeButton(row)) return wrapAsRow(row);
+                          return [];
+                      })
+                      .filter((row) => row.length > 0);
+                    // If it was a flat array of buttons (first element a button), wrap whole array as a single row
+                    if (ik.length > 0 && !Array.isArray(options.reply_markup.inline_keyboard[0]) && looksLikeButton(options.reply_markup.inline_keyboard[0])) {
+                        const flat = options.reply_markup.inline_keyboard.filter(looksLikeButton);
+                        ik = [flat];
+                    }
+                } else {
+                    // Unknown/invalid type -> drop keyboard to avoid 400
+                    ik = undefined;
+                }
+                if (ik && Array.isArray(ik) && ik.length > 0) options.reply_markup.inline_keyboard = ik;
+                else delete options.reply_markup.inline_keyboard;
+            }
+
             var result = await pushUserRequest(this.TGbot, "sendMessage", userId, chatId, text, options);
             resolve(result);
         } catch (error) {
-            reject(error);
+            if (error && error.code === "ETELEGRAM") {
+                console.warn("sendMessage ETELEGRAM:", error.response && error.response.body && error.response.body.description);
+                resolve(false);
+            } else {
+                reject(error);
+            }
         }
         return;
     } )}
@@ -543,10 +585,40 @@ class LGHInterface {
     editMessageText(userId, text, options)
     {return new Promise( async (resolve, reject) => {
         try {
+            // Sanitize inline keyboard shape: must be Array of Arrays of buttons
+            if (options && options.reply_markup && options.reply_markup.inline_keyboard != null) {
+                let ik = options.reply_markup.inline_keyboard;
+                const looksLikeButton = (btn) => btn && typeof btn === 'object' && (btn.text || btn.callback_data || btn.url);
+                const wrapAsRow = (btn) => [btn];
+                if (!Array.isArray(ik) && looksLikeButton(ik)) {
+                    ik = [[ik]];
+                } else if (Array.isArray(ik)) {
+                    ik = ik
+                      .map((row) => {
+                          if (Array.isArray(row)) return row.filter(looksLikeButton);
+                          if (looksLikeButton(row)) return wrapAsRow(row);
+                          return [];
+                      })
+                      .filter((row) => row.length > 0);
+                    if (ik.length > 0 && !Array.isArray(options.reply_markup.inline_keyboard[0]) && looksLikeButton(options.reply_markup.inline_keyboard[0])) {
+                        const flat = options.reply_markup.inline_keyboard.filter(looksLikeButton);
+                        ik = [flat];
+                    }
+                } else {
+                    ik = undefined;
+                }
+                if (ik && Array.isArray(ik) && ik.length > 0) options.reply_markup.inline_keyboard = ik;
+                else delete options.reply_markup.inline_keyboard;
+            }
             var result = await pushUserRequest(this.TGbot, "editMessageText", userId, text, options);
             resolve(result);
         } catch (error) {
-            reject(error);
+            if (error && error.code === "ETELEGRAM") {
+                console.warn("editMessageText ETELEGRAM:", error.response && error.response.body && error.response.body.description);
+                resolve(false);
+            } else {
+                reject(error);
+            }
         }
         return;
     } )}

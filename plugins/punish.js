@@ -3,6 +3,7 @@ const GHCommand = require("../api/tg/LGHCommand.js");
 const { punishUser, unpunishUser, silentPunish, silentUnpunish, genPunishText, genUnpunishButtons, genUnpunishText, genRevokePunishButton } = require("../api/utils/punishment.js");
 const { LGHUserNameByMessage } = require("../api/tg/tagResolver.js");
 const { parseHumanTime, telegramErrorToText, unwarnUser, clearWarns, LGHUserName, bold, getUnixTime } = require("../api/utils/utils.js");
+const RM = require("../api/utils/rolesManager.js");
 
 function main(args)
 {
@@ -13,7 +14,8 @@ function main(args)
     l = global.LGHLangs; //importing langs object
 
     var commandsList = ["COMMAND_DELETE", "COMMAND_DELWARN", "COMMAND_DELKICK", "COMMAND_DELMUTE", "COMMAND_DELBAN", "COMMAND_WARN",
-    "COMMAND_UNWARN", "COMMAND_KICK", "COMMAND_MUTE", "COMMAND_UNMUTE", "COMMAND_BAN", "COMMAND_UNBAN"];
+    "COMMAND_UNWARN", "COMMAND_KICK", "COMMAND_MUTE", "COMMAND_UNMUTE", "COMMAND_BAN", "COMMAND_UNBAN",
+    "COMMAND_KICKME", "COMMAND_BANME"];
     GHCommand.registerCommands(commandsList, async (msg, chat, user, private, lang, key, keyLang) => {
         if(!msg.chat.isGroup) return;
         if(msg.waitingReply) return;
@@ -56,6 +58,18 @@ function main(args)
             case "COMMAND_UNMUTE":removePunishment=3;break;
             case "COMMAND_BAN":punishment=4;break;
             case "COMMAND_UNBAN":punishment=4;break;
+            case "COMMAND_KICKME": {
+                // Self kick: override target to the invoking user
+                target = RM.userToTarget(msg.chat, user);
+                punishment = 2;
+                break;
+            }
+            case "COMMAND_BANME": {
+                // Self ban: override target to the invoking user
+                target = RM.userToTarget(msg.chat, user);
+                punishment = 4;
+                break;
+            }
         }
 
         if((punishment || removePunishment) && !target)
