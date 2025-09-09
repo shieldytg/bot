@@ -39,6 +39,9 @@ async function main(config) {
 
     const GHbot = new LGHelpTemplate({GHbot: GroupHelpBot, TGbot, db, config});
 
+    // Ensure command registry is isolated per bot instance
+    try { GHCommand.setInstanceId(bot.id); } catch(e) { /* older versions may not support; ignore */ }
+
     //load tagResolver
     TR.load(config);
 
@@ -199,7 +202,7 @@ async function main(config) {
         GroupHelpBot.emit( "message", msg, chat, user );
 
         if(msg.waitingReply == false && !(msg.reply_to_message && msg.isGroup && msg.reply_to_message.text && String(msg.reply_to_message.text).startsWith("#Support")))
-            GHCommand.messageEvent(msg, chat, user);
+            GHCommand.messageEvent(msg, chat, user, bot.id);
 
         if ( chat.type == "private" ) GroupHelpBot.emit( "private", msg, chat, user );
 

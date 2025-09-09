@@ -12,9 +12,13 @@ function main(args)
     
     GHCommand.registerCommands(["COMMAND_PIN"], async (msg, chat, user, private, lang, key, keyLang) => {
         if(!msg.chat.isGroup) return;
-        if(msg.reply_to_message)
+        // Require the command to be a reply to the message that should be pinned
+        if(!msg.reply_to_message)
         {
-            //TODO: let know the user how to use pin command
+            const hint = l[lang].CMDDESC_PIN || "Reply to a message with /pin to pin it.";
+            // reply in the same context (private/group) where the command was issued
+            const options = { reply_parameters: {chat_id: msg.chat.id, message_id: msg.message_id, allow_sending_without_reply:true} };
+            sendCommandReply(private, lang, GHbot, user.id, msg.chat.id, (id)=>GHbot.sendMessage(user.id, id, hint, options));
             return;
         }
 

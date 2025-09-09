@@ -639,15 +639,22 @@ function stateToEmoji(perm)
  */
 function tradCommand(lang, commandKey)
 {
-    var translated = "";
-    if(commandKey.startsWith("COMMAND_")) //if is language-depenent command translate it to the acutal command
-        translated = l[lang][commandKey];
-    if(commandKey.startsWith("@COMMAND_"))
-        translated = l[lang][commandKey.replace("@","")];
-    if(commandKey.startsWith("*COMMAND_"))
-        translated = l[lang][commandKey.replace("*","")];
+    // Prefer canonical English command names so UI shows /rules instead of localized variants
+    // Keep support for prefixed variants (@,*), and fall back to current language if English key is missing
+    var baseKey = commandKey;
+    if (commandKey.startsWith("@") || commandKey.startsWith("*"))
+        baseKey = commandKey.substring(1);
 
-    return translated;
+    var translated = "";
+    // Try English canonical mapping first
+    if (baseKey.startsWith("COMMAND_") && l["en_en"] && l["en_en"].hasOwnProperty(baseKey))
+        translated = l["en_en"][baseKey];
+
+    // Fallbacks to maintain backward compatibility
+    if (!translated && baseKey.startsWith("COMMAND_") && l[lang] && l[lang].hasOwnProperty(baseKey))
+        translated = l[lang][baseKey];
+
+    return translated || "";
 }
 
 //TODO due to code here, we should force every custom command alias to be characters/numbers only, or it may inflict with html formatting or "COMMAND_" could search for unexhisting command

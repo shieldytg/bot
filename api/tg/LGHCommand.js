@@ -1,6 +1,7 @@
 const GH = require("../../GHbot.js");
 const { checkCommandPerms } = require("../utils/rolesManager.js");
 l = global.LGHLangs;
+
 /**
  * @typedef {Object} resolveCommandKeyReturn
  * @property {string} key - Command permission key
@@ -25,12 +26,20 @@ function resolveCommandKey(name)
 
 ///////////
 
+// Maintain per-instance command tables to avoid cross-bot leakage
+// instanceId is typically TGbot.me.id
+var currentInstanceId = null;
+var runTables = {}; // { [instanceId]: { COMMAND_KEY: handler } }
 
-// COMMAND_NAME : function()
-var runTable = {}; //there are stored registered commands
+function ensureTable(instanceId) {
+    if (!runTables[instanceId]) runTables[instanceId] = {};
+    return runTables[instanceId];
+}
 
-//list of commands that should alert when permission is missing
-var missingPermsAlertList = {};
+function setInstanceId(instanceId) {
+    currentInstanceId = String(instanceId);
+    ensureTable(currentInstanceId);
+}
 
 /**
  * Registers a list of commands with various specified key permission to a function.
@@ -42,15 +51,18 @@ var missingPermsAlertList = {};
  * func.lang contains the lang of the chat where message should be sent
  * func.key contain the trigghered key
  * func.keyLang contain in what language the key has been found in
+ * @param {string} [instanceId] - The instance ID for the command registry
  * @example
  * registerCommand(['COMMAND_RULES'], function(msg, chat, user, key, lang, private) {
  *      console.log(key) //COMMAND_RULES
  * });
  */
-function registerCommands(keys, func)
+function registerCommands(keys, func, instanceId)
 {
+    const id = String(instanceId || currentInstanceId || "default");
+    const table = ensureTable(id);
     keys.forEach((key)=>{
-        runTable[key] = func;
+        table[key] = func;
     });
 };
 
@@ -59,8 +71,9 @@ function registerCommands(keys, func)
  * @param {GH.LGHMessage} msg 
  * @param {GH.LGHChat} chat 
  * @param {GH.LGHUser} user 
+ * @param {string} [instanceId] - The instance ID for the command registry
  */
-function messageEvent(msg, chat, user)
+function messageEvent(msg, chat, user, instanceId)
 {
     if(msg.waitingReply) return;
 
@@ -75,16 +88,19 @@ function messageEvent(msg, chat, user)
     var key = commandInfo.key;
     var keyLang = commandInfo.lang;
 
+    const id = String(instanceId || currentInstanceId || "default");
+    const table = ensureTable(id);
+
     if(chat.isGroup){
         var check = checkCommandPerms(user.perms.commands, key);
         var hasGroupPermission = check.group;
         var hasPrivatePermission = check.private;
 
-        //run related one command
-        if( runTable[key] && !forcesPrivate && hasGroupPermission)
-            runTable[key](msg, chat, user, false, chat.lang, key, keyLang);
-        if( runTable[key] && (!hasGroupPermission || forcesPrivate) && hasPrivatePermission )
-            runTable[key](msg, chat, user, true, user.lang, key, keyLang);
+        // run related one command
+        if( table[key] && !forcesPrivate && hasGroupPermission)
+            table[key](msg, chat, user, false, chat.lang, key, keyLang);
+        if( table[key] && (!hasGroupPermission || forcesPrivate) && hasPrivatePermission )
+            table[key](msg, chat, user, true, user.lang, key, keyLang);
 
         if( forcesPrivate && hasGroupPermission && !hasPrivatePermission )
         {
@@ -97,11 +113,12 @@ function messageEvent(msg, chat, user)
         }
     }
     else{
-        runTable[key](msg, chat, user, true, user.lang, key, keyLang);
+        if (table[key]) table[key](msg, chat, user, true, user.lang, key, keyLang);
     }
 }
 
 module.exports = {
+    setInstanceId,
     registerCommands,
     messageEvent
 }
