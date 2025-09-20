@@ -6,7 +6,7 @@ const { bold, code, unsetWaitReply, cleanHTML } = require("../api/utils/utils.js
 function ensureChatAudioSettings(chat, defaultModel) {
     if (!chat.audio) {
         chat.audio = {
-            state: false,
+            state: true,
             provider: "gemini",
             model: defaultModel || "gemini-pro", // default from config if provided
             prompts: {} // { [lang]: string }

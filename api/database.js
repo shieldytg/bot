@@ -344,8 +344,8 @@ function getDatabase(config) {
                 chat.goodbye = newGoodbyeObj();
                 chat.alphabets = newAlphabetsObj();
                 chat.media = {};
-                // Optional: initialize audio recognition container (kept minimal, plugin will ensure shape)
-                // chat.audio = { state: false };
+                // Enable audio recognition by default (plugin will complete shape on first use)
+                chat.audio = { state: true };
                 
                 var chatFile = database.chatsDir + "/" + chat.id + ".json";
                 console.log( "adding chat to database lang: " + chat.lang );
