@@ -34,7 +34,7 @@ node -v
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/<your-repo>/shieldy.git
+   git clone https://github.com/shieldytg/bot.git
    cd shieldy
    ```
 
