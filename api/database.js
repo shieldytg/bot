@@ -6,8 +6,9 @@ var RM = require("./utils/rolesManager.js");
 function newSpamObj()
 {
     var obj = {
-        tgLinks: { usernames:false, bots:false, exceptions:[], punishment:1, PTime:0 },
-        links: { usernames:false, bots:false, exceptions:[], punishment:1, PTime:0 },
+        // By default, antispam is OFF (punishment: 0). Admins can enable from settings.
+        tgLinks: { usernames:false, bots:false, exceptions:[], punishment:0, PTime:0, delete:false },
+        links: { usernames:false, bots:false, exceptions:[], punishment:0, PTime:0, delete:false },
         forward: {
             channels: {punishment: 0, PTime: 0, delete: false},
             groups: {punishment: 0, PTime: 0, delete: false},
