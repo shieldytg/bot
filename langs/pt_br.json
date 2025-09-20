@@ -549,5 +549,16 @@
   "ROLES": "Cargos",
   "CONFIRM_FORGOT": "Tem certeza de que deseja esquecer os dados do {user}?\nO usuário será expulso e todos os seus registros serão apagados dos dados do seu grupo no meu banco de dados. Esta ação é irreversível",
   "SUCCESSFULL_FORGOT": "Usuário esquecido com sucesso!\n\nPor favor, note: se o usuário voltar a entrar no grupo, novos dados sobre ele serão armazenados novamente\nObserve também que removi os dados deste usuário apenas dos dados deste grupo, os dados do usuário em outros grupos não foram afetados\nEu não apaguei nenhum dado do usuário dos servidores do Telegram!",
-  "ADV_REPORT_ISSUE": "Se você acha que é um erro, por favor, reporte em https://github.com/Sp3rick/GroupHelp/issues"
+  "ADV_REPORT_ISSUE": "Se você acha que é um erro, por favor, reporte em https://github.com/Sp3rick/GroupHelp/issues",
+
+  "S_AUDIOREC_BUTTON": "🗣 Reconhecimento de Áudio",
+  "AUDIOREC_TITLE": "🗣 Reconhecimento de Áudio",
+  "AUDIOREC_DESCRIPTION": "Transcrever mensagens de voz em texto.\n\nStatus: {status}\nModelo: {model}\nPrompt: {prompt}",
+  "SET_PROMPT_BUTTON": "📝 Definir prompt",
+  "AUDIOREC_SEND_PROMPT": "Envie a instrução de reconhecimento (prompt) para o idioma atual do grupo: {lang}",
+  "AUDIOREC_PROMPT_SET": "✅ Prompt salvo.",
+  "AUDIO_PLEASE_WAIT": "Aguarde...",
+  "AUDIO_MISSING_KEY": "Reconhecimento de áudio: chave de API ausente. Defina a variável de ambiente GEMINI_API_KEY ou geminiApiKey no config.json",
+  "AUDIO_EMPTY_TRANSCRIPT": "Nenhum texto reconhecido.",
+  "AUDIO_ERROR": "Erro no reconhecimento de áudio."
 }

@@ -45,6 +45,8 @@ async function main(config) {
     //load tagResolver
     TR.load(config);
 
+    // Note: plugins are auto-loaded by the modules loader (see index.js). Avoid manual require here to prevent double registration.
+
     //some simplified variables
     l = global.LGHLangs;
 

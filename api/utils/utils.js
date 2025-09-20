@@ -323,6 +323,8 @@ function genSettingsKeyboard(lang, chatId)
 
         [{text: l[lang].S_MEDIA_BUTTON, callback_data: "S_MEDIA_PAGE1:"+chatId}],
 
+        [{text: l[lang].S_AUDIOREC_BUTTON, callback_data: "S_AUDIOREC_BUTTON:"+chatId}],
+
         [{text: l[lang].S_PORN_BUTTON, callback_data: "S_PORN_BUTTON:"+chatId}],
 
         [{text: l[lang].S_WARN_BUTTON, callback_data: "S_WARN_BUTTON:"+chatId}/*,

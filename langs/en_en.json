@@ -583,5 +583,16 @@
     "ROLES" : "Roles",
     "CONFIRM_FORGOT" : "Are you sure to forgot {user} data?\nUser will be kicked all his tracks will be cleared from your group data on my database, this action is irreversible",
     "SUCCESSFULL_FORGOT" : "User forgot successfully!\n\nPlease note: if user rejoin the group new data about him will be stored again\nNote also that i removed data of this user only from this group data, user data on other groups isn't affected\nI didn't cleared any user data from telegram servers!",
-    "ADV_REPORT_ISSUE" : "If you think it is an error please report it to https://github.com/Sp3rick/GroupHelp/issues"
+    "ADV_REPORT_ISSUE" : "If you think it is an error please report it to https://github.com/Sp3rick/GroupHelp/issues",
+    "S_AUDIOREC_BUTTON": "🗣 Audio Recognition",
+    "AUDIOREC_TITLE": "🗣 Audio Recognition",
+    "AUDIOREC_DESCRIPTION": "Transcribe voice messages into text.\n\nStatus: {status}\nModel: {model}\nPrompt: {prompt}",
+    "SET_PROMPT_BUTTON": "📝 Set prompt",
+    "AUDIOREC_SEND_PROMPT": "Send the recognition instruction (prompt) for current group language: {lang}",
+    "AUDIOREC_PROMPT_SET": "✅ Prompt saved.",
+    "AUDIO_PLEASE_WAIT": "Please wait...",
+    "AUDIO_MISSING_KEY": "Audio recognition: missing API key. Set GEMINI_API_KEY environment variable or geminiApiKey in config.json",
+    "AUDIO_EMPTY_TRANSCRIPT": "No text recognized.",
+    "AUDIO_ERROR": "Audio recognition error.",
+    "AUDIO_PROMPT": "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided file.\n\n**Crucial Instruction: You MUST completely ignore the visual stream of the file. Your task is NOT to describe the video.**\n\n- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n- **DO:** Maintain the original language of the speech.\n\n- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n- **DO NOT:** Analyze the camera work or shot composition.\n- **DO NOT:** Provide summaries, explanations, or any commentary.\n- **DO NOT:** Add headers, timestamps, or any formatting.\n\nReturn ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\"."
 }

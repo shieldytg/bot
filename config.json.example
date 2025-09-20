@@ -4,6 +4,8 @@
     "deleteChatDataAfterBotRemove" : true,
     "overwriteChatDataIfReAddedToGroup" : false,
     "allowExternalApi" : true,
+    "geminiApiKey": "YOUR_GEMINI_API_KEY",
+    "geminiModel": "gemini-2.5-flash",
     "reserveLang" : "en_en",
     "saveDatabaseSeconds" : 3600,
     "saveTagResolverSeconds" : 3600,

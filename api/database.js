@@ -343,6 +343,8 @@ function getDatabase(config) {
                 chat.goodbye = newGoodbyeObj();
                 chat.alphabets = newAlphabetsObj();
                 chat.media = {};
+                // Optional: initialize audio recognition container (kept minimal, plugin will ensure shape)
+                // chat.audio = { state: false };
                 
                 var chatFile = database.chatsDir + "/" + chat.id + ".json";
                 console.log( "adding chat to database lang: " + chat.lang );
@@ -448,6 +450,8 @@ function getDatabase(config) {
                 if(chat.hasOwnProperty("goodbye")) global.DBCHATS[chat.id].goodbye = chat.goodbye;
                 if(chat.hasOwnProperty("alphabets")) global.DBCHATS[chat.id].alphabets = chat.alphabets;
                 if(chat.hasOwnProperty("media")) global.DBCHATS[chat.id].media = chat.media;
+                // Persist audio recognition settings if present
+                if(chat.hasOwnProperty("audio")) global.DBCHATS[chat.id].audio = chat.audio;
                 if(chat.hasOwnProperty("link")) global.DBCHATS[chat.id].link = chat.link;
 
                 global.DBCHATS[chat.id].lastUse = now;

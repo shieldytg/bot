@@ -37,5 +37,16 @@
     "COMMAND_SETTINGS" : "impostazioni"
     ,
     "MEDIA:nsfw": "Rilevatore pornografia",
-    "NSFW_PUNISHMENT": "Rilevatore NSFW: contenuto proibito rilevato"
+    "NSFW_PUNISHMENT": "Rilevatore NSFW: contenuto proibito rilevato",
+
+    "S_AUDIOREC_BUTTON": "🗣 Riconoscimento Audio",
+    "AUDIOREC_TITLE": "🗣 Riconoscimento Audio",
+    "AUDIOREC_DESCRIPTION": "Trascrivi i messaggi vocali in testo.\n\nStato: {status}\nModello: {model}\nPrompt: {prompt}",
+    "SET_PROMPT_BUTTON": "📝 Imposta prompt",
+    "AUDIOREC_SEND_PROMPT": "Invia le istruzioni di riconoscimento (prompt) per la lingua corrente del gruppo: {lang}",
+    "AUDIOREC_PROMPT_SET": "✅ Prompt salvato.",
+    "AUDIO_PLEASE_WAIT": "Attendere...",
+    "AUDIO_MISSING_KEY": "Riconoscimento audio: chiave API mancante. Imposta la variabile d'ambiente GEMINI_API_KEY oppure geminiApiKey in config.json",
+    "AUDIO_EMPTY_TRANSCRIPT": "Nessun testo riconosciuto.",
+    "AUDIO_ERROR": "Errore nel riconoscimento audio."
 }
