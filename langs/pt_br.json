@@ -553,7 +553,7 @@
 
   "S_AUDIOREC_BUTTON": "🗣 Reconhecimento de Áudio",
   "AUDIOREC_TITLE": "🗣 Reconhecimento de Áudio",
-  "AUDIOREC_DESCRIPTION": "Transcrever mensagens de voz em texto.\n\nStatus: {status}\nModelo: {model}\nPrompt: {prompt}",
+  "AUDIOREC_DESCRIPTION": "Transcrever mensagens de voz em texto.\n\nStatus: {status}\nModelo: {model}\nPrompt: {prompt}\n\nPrivacidade: O áudio é enviado ao Google para transcrição.",
   "SET_PROMPT_BUTTON": "📝 Definir prompt",
   "AUDIOREC_SEND_PROMPT": "Envie a instrução de reconhecimento (prompt) para o idioma atual do grupo: {lang}",
   "AUDIOREC_PROMPT_SET": "✅ Prompt salvo.",

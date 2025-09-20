@@ -586,7 +586,7 @@
     "ADV_REPORT_ISSUE" : "If you think it is an error please report it to https://github.com/Sp3rick/GroupHelp/issues",
     "S_AUDIOREC_BUTTON": "🗣 Audio Recognition",
     "AUDIOREC_TITLE": "🗣 Audio Recognition",
-    "AUDIOREC_DESCRIPTION": "Transcribe voice messages into text.\n\nStatus: {status}\nModel: {model}\nPrompt: {prompt}",
+    "AUDIOREC_DESCRIPTION": "Transcribe voice messages into text.\n\nStatus: {status}\nModel: {model}\nPrompt: {prompt}\n\nPrivacy: Audio is sent to Google for transcription.",
     "SET_PROMPT_BUTTON": "📝 Set prompt",
     "AUDIOREC_SEND_PROMPT": "Send the recognition instruction (prompt) for current group language: {lang}",
     "AUDIOREC_PROMPT_SET": "✅ Prompt saved.",
