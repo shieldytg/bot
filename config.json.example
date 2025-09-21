@@ -4,7 +4,7 @@
     "deleteChatDataAfterBotRemove" : true,
     "overwriteChatDataIfReAddedToGroup" : false,
     "allowExternalApi" : true,
-    "geminiApiKey": "YOUR_GEMINI_API_KEY",
+    "geminiApiKey": "YOUR_GEMINI_API_KEY", // Gemini api key, leave default if you want to disable audio recognition
     "geminiModel": "gemini-2.5-flash",
     "reserveLang" : "en_en",
     "saveDatabaseSeconds" : 3600,

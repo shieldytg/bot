@@ -86,10 +86,16 @@ module.exports = function(GHbot) {
 `;
 
         return sendCommandReply(private, lang, GHbot, msg.from.id, msg.chat.id, (sendId) => {
-            return TGbot.sendMessage(sendId, message, { 
+            const opts = { 
                 parse_mode: 'HTML',
                 disable_web_page_preview: true
-            });
+            };
+            // If command is used inside a forum topic, keep the reply in the same topic
+            // Only applicable when sending to the group (not private)
+            if (!private && msg && typeof msg.message_thread_id !== 'undefined') {
+                opts.message_thread_id = msg.message_thread_id;
+            }
+            return TGbot.sendMessage(sendId, message, opts);
         });
     });
 

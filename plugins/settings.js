@@ -75,7 +75,7 @@ function main(args)
                 message_id : msg.message_id,
                 chat_id : cb.chat.id,
                 parse_mode : "HTML",
-                reply_markup : { inline_keyboard : genSettingsKeyboard(user.lang, chat.id) }
+                reply_markup : { inline_keyboard : genSettingsKeyboard(user.lang, chat.id, config) }
             }
 
             var text =
@@ -102,7 +102,7 @@ function main(args)
                 message_id : msg.message_id,
                 chat_id : cb.chat.id,
                 parse_mode : "HTML",
-                reply_markup : { inline_keyboard : genSettingsKeyboard(user.lang, chat.id) }
+                reply_markup : { inline_keyboard : genSettingsKeyboard(user.lang, chat.id, config) }
             }
             var text = genSettingsText(user.lang, chat);
             GHbot.editMessageText(user.id,text,options);
@@ -263,6 +263,27 @@ function main(args)
             GHbot.editMessageText(user.id, text, options)
             GHbot.answerCallbackQuery(user.id, cb.id);
 
+        }
+
+        // Generic close menu handler: works for both "S_CLOSE_BUTTON" and "S_CLOSE_BUTTON:<chatId>"
+        if (cb.data.startsWith("S_CLOSE_BUTTON")) {
+            try {
+                // Prefer deleting the message
+                await TGbot.deleteMessage(cb.message.chat.id, cb.message.message_id);
+                try { GHbot.answerCallbackQuery(user.id, cb.id); } catch(e) {}
+            } catch (err) {
+                // Fallback: clear keyboard and replace text with a close icon
+                try {
+                    await GHbot.editMessageText(user.id, "✖️", {
+                        chat_id: cb.message.chat.id,
+                        message_id: cb.message.message_id,
+                        reply_markup: { inline_keyboard: [] },
+                    });
+                    GHbot.answerCallbackQuery(user.id, cb.id);
+                } catch (e2) {
+                    try { GHbot.answerCallbackQuery(user.id, cb.id, { text: "", show_alert: false }); } catch(e3) {}
+                }
+            }
         }
 
     })

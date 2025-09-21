@@ -55,13 +55,21 @@ function main(args) {
 
     l = global.LGHLangs;
 
+    // Determine if Gemini API is available and not using the placeholder value
+    const hasValidGemini = !!(
+        (config && config.geminiApiKey && config.geminiApiKey !== "YOUR_GEMINI_API_KEY") ||
+        process.env.GEMINI_API_KEY
+    );
+
     // Settings callbacks
     GHbot.onCallback(async (cb, chat, user) => {
         if (!cb.data.startsWith("S_AUDIOREC")) return;
+        // If Gemini is not properly configured, behave as if audio feature doesn't exist
+        if (!hasValidGemini) return;
         if (!chat.isGroup) return;
         if (!(user.perms && user.perms.settings == 1)) return;
 
-        const defaultModel = (config && config.geminiModel) || "gemini-pro";
+        const defaultModel = (config && config.geminiModel) || "gemini-2.5-flash";
         chat = ensureChatAudioSettings(chat, defaultModel);
         const msg = cb.message;
         const lang = chat.lang;
@@ -69,7 +77,7 @@ function main(args) {
         // Open menu
         if (cb.data.startsWith("S_AUDIOREC_BUTTON")) {
             const onOff = chat.audio.state ? l[lang].ON : l[lang].OFF;
-            const model = chat.audio.model || "gemini-pro";
+            const model = chat.audio.model || "gemini-2.5-flash";
             const prompt = chat.audio.prompts && chat.audio.prompts[lang] ? chat.audio.prompts[lang] : l[lang].AUDIO_PROMPT;
 
             const text = `${bold(l[lang].AUDIOREC_TITLE)}\n\n${l[lang].AUDIOREC_DESCRIPTION.replace("{status}", onOff).replace("{model}", code(model)).replace("{prompt}", code(prompt))}`;
@@ -172,6 +180,8 @@ function main(args) {
     GHbot.onMessage(async (msg, chat, user) => {
         try {
             if (!msg.voice) return;
+            // If Gemini is not properly configured, do not react to voice messages at all
+            if (!hasValidGemini) return;
             const defaultModel = (config && config.geminiModel) || "gemini-pro";
             chat = ensureChatAudioSettings(chat, defaultModel);
             if (!chat.audio || !chat.audio.state) return;
@@ -186,13 +196,8 @@ function main(args) {
 
             // Safety: need API key
             const apiKey = (config && (config.geminiApiKey || config.GEMINI_API_KEY)) || process.env.GEMINI_API_KEY;
-            if (!apiKey) {
-                console.warn("[audio] Missing GEMINI API key. Set config.geminiApiKey or GEMINI_API_KEY env");
-                await GHbot.editMessageText(user.id, l[lang].AUDIO_MISSING_KEY || "Audio recognition: missing API key.", {
-                    chat_id: waitingMsg.chat.id,
-                    message_id: waitingMsg.message_id,
-                    parse_mode: "HTML",
-                });
+            if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY") {
+                // Safety: silently stop if key is not configured or is placeholder
                 return;
             }
 
@@ -207,8 +212,37 @@ function main(args) {
             const t0 = Date.now();
             console.log(`[audio] Sending request to Gemini: model=${modelInUse} promptLen=${(prompt||"").length}`);
 
-            const resp = await axios.post(endpoint, body, { headers: { "Content-Type": "application/json" } });
-            console.log(`[audio] Gemini responded in ${Date.now() - t0} ms`);
+            let resp;
+            try {
+                resp = await axios.post(endpoint, body, { headers: { "Content-Type": "application/json" } });
+                console.log(`[audio] Gemini responded in ${Date.now() - t0} ms`);
+            } catch (apiErr) {
+                // Prepare readable error text
+                let errText = "";
+                try {
+                    if (apiErr && apiErr.response && apiErr.response.data) {
+                        errText = typeof apiErr.response.data === "string" ? apiErr.response.data : JSON.stringify(apiErr.response.data);
+                    } else if (apiErr && apiErr.message) {
+                        errText = apiErr.message;
+                    } else {
+                        errText = String(apiErr);
+                    }
+                } catch (_) { errText = String(apiErr); }
+
+                // Log the error 10 times on new lines
+                for (let i = 0; i < 10; i++) {
+                    console.error(errText);
+                }
+
+                // Show concise error in Telegram
+                await GHbot.editMessageText(user.id, "Error", {
+                    chat_id: waitingMsg.chat.id,
+                    message_id: waitingMsg.message_id,
+                    parse_mode: "HTML",
+                    reply_markup: { inline_keyboard: [] },
+                });
+                return;
+            }
             let transcript = "";
             try {
                 const cand = resp.data && resp.data.candidates && resp.data.candidates[0];
@@ -226,18 +260,38 @@ function main(args) {
             }
 
             const htmlTranscript = `<blockquote expandable="true">${cleanHTML(transcript)}</blockquote>`;
-            await GHbot.editMessageText(user.id, htmlTranscript, {
-                chat_id: waitingMsg.chat.id,
-                message_id: waitingMsg.message_id,
-                parse_mode: "HTML",
-                reply_markup: {
-                    inline_keyboard: [[{ text: "🗑️", callback_data: `S_AUDIOREC_DEL:${chat.id}:${waitingMsg.message_id}` }]],
-                },
-            });
+            try {
+                await GHbot.editMessageText(user.id, htmlTranscript, {
+                    chat_id: waitingMsg.chat.id,
+                    message_id: waitingMsg.message_id,
+                    parse_mode: "HTML",
+                    reply_markup: {
+                        inline_keyboard: [[{ text: "🗑️", callback_data: `S_AUDIOREC_DEL:${chat.id}:${waitingMsg.message_id}` }]],
+                    },
+                });
+            } catch (e) {
+                const desc = (e && e.response && e.response.body && e.response.body.description) ? e.response.body.description : (e && e.response && e.response.statusText) || String(e || "");
+                if (String(desc).toLowerCase().includes("message is too long")) {
+                    // Replace with a concise error message as requested
+                    await GHbot.editMessageText(user.id, "Error: Message to long for telegram", {
+                        chat_id: waitingMsg.chat.id,
+                        message_id: waitingMsg.message_id,
+                        parse_mode: "HTML",
+                        reply_markup: { inline_keyboard: [] },
+                    });
+                    return;
+                }
+                throw e;
+            }
         } catch (err) {
             try {
                 const lang = chat && chat.lang ? chat.lang : (user && user.lang ? user.lang : "en_en");
-                await GHbot.sendMessage(user.id, msg.chat.id, (l[lang] && l[lang].AUDIO_ERROR) || "Audio recognition error.");
+                const desc = (err && err.response && err.response.body && err.response.body.description) ? err.response.body.description : (err && err.response && err.response.statusText) || String(err || "");
+                if (String(desc).toLowerCase().includes("message is too long")) {
+                    await GHbot.sendMessage(user.id, msg.chat.id, "Error: Message to long for telegram");
+                } else {
+                    await GHbot.sendMessage(user.id, msg.chat.id, (l[lang] && l[lang].AUDIO_ERROR) || "Audio recognition error.");
+                }
             } catch (e) {}
             console.log("[audio] error:", err && err.response ? err.response.data || err.response.statusText : err);
         }

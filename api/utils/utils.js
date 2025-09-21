@@ -298,11 +298,18 @@ function parseCommand(text){
 /**
  * @param {string} lang 
  * @param {TelegramBot.ChatId} chatId 
+ * @param {Object} [config] - optional config to determine feature availability
  * @returns {Array<Array<TelegramBot.KeyboardButton>>}
  */
-function genSettingsKeyboard(lang, chatId)
+function genSettingsKeyboard(lang, chatId, config)
 {
     var l = global.LGHLangs;
+
+    // Determine if Gemini audio recognition should be shown
+    const hasValidGemini = !!(
+        (config && config.geminiApiKey && config.geminiApiKey !== "YOUR_GEMINI_API_KEY") ||
+        process.env.GEMINI_API_KEY
+    );
 
     var keyboard =
     [
@@ -323,8 +330,6 @@ function genSettingsKeyboard(lang, chatId)
 
         [{text: l[lang].S_MEDIA_BUTTON, callback_data: "S_MEDIA_PAGE1:"+chatId}],
 
-        [{text: l[lang].S_AUDIOREC_BUTTON, callback_data: "S_AUDIOREC_BUTTON:"+chatId}],
-
         [{text: l[lang].S_PORN_BUTTON, callback_data: "S_PORN_BUTTON:"+chatId}],
 
         [{text: l[lang].S_WARN_BUTTON, callback_data: "S_WARN_BUTTON:"+chatId}/*,
@@ -341,6 +346,11 @@ function genSettingsKeyboard(lang, chatId)
         {text: l[lang].S_CLOSE_BUTTON, callback_data: "S_CLOSE_BUTTON:"+chatId},
         {text: l[lang].OTHER_BUTTON, callback_data: "SETTINGS_PAGE2:"+chatId}],
     ] 
+
+    // Insert Audio Recognition row only when available
+    if (hasValidGemini) {
+        keyboard.splice(5, 0, [{text: l[lang].S_AUDIOREC_BUTTON, callback_data: "S_AUDIOREC_BUTTON:"+chatId}]);
+    }
 
     return keyboard;
 
