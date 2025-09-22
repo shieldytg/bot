@@ -596,5 +596,17 @@
     "AUDIO_MISSING_KEY": "Audio recognition: missing API key. Set GEMINI_API_KEY environment variable or geminiApiKey in config.json",
     "AUDIO_EMPTY_TRANSCRIPT": "No text recognized.",
     "AUDIO_ERROR": "Audio recognition error.",
-    "AUDIO_PROMPT": "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided file.\n\n**Crucial Instruction: You MUST completely ignore the visual stream of the file. Your task is NOT to describe the video.**\n\n- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n- **DO:** Maintain the original language of the speech.\n\n- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n- **DO NOT:** Analyze the camera work or shot composition.\n- **DO NOT:** Provide summaries, explanations, or any commentary.\n- **DO NOT:** Add headers, timestamps, or any formatting.\n\nReturn ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\"."
+    "AUDIO_PROMPT": "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided file.\n\n**Crucial Instruction: You MUST completely ignore the visual stream of the file. Your task is NOT to describe the video.**\n\n- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n- **DO:** Maintain the original language of the speech.\n\n- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n- **DO NOT:** Analyze the camera work or shot composition.\n- **DO NOT:** Provide summaries, explanations, or any commentary.\n- **DO NOT:** Add headers, timestamps, or any formatting.\n\nReturn ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\".",
+    
+    "AUDIOREC_TITLE": "🎙 Audio & Video Note Transcription",
+    "AUDIOREC_DESCRIPTION": "Transcribe voice messages and video notes to text.\n\n• Status: {status}\n• Model: {model}\n• Custom prompt: {prompt}",
+    "AUDIO_PLEASE_WAIT": "🎤 Transcribing audio... Please wait...",
+    "AUDIO_EMPTY_TRANSCRIPT": "No speech detected in the audio.",
+    "AUDIO_ERROR": "❌ Error transcribing audio. Please try again.",
+    "AUDIOREC_PROMPT_SET": "✅ Custom prompt has been set for this language.",
+    "AUDIOREC_SEND_PROMPT": "✍️ Please send me the custom prompt you want to use for audio transcription in {lang}.\n\nYou can use variables like {user} for username, {name} for first name, etc.",
+    "TURN_ON_BUTTON": "✅ Enable",
+    "TURN_OFF_BUTTON": "❌ Disable",
+    "SET_PROMPT_BUTTON": "✏️ Set Custom Prompt",
+    "NOT_ALLOWED": "You don't have permission to do that."
 }

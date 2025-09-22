@@ -15,18 +15,50 @@ function ensureChatAudioSettings(chat, defaultModel) {
     return chat;
 }
 
-async function fetchTelegramFileAsBase64(TGbot, fileId) {
-    const fileLink = await TGbot.getFileLink(fileId);
-    const res = await axios.get(fileLink, { responseType: "arraybuffer" });
+async function fetchTelegramFileAsBase64(TGbot, fileId, isVideoNote = false) {
+    // For video notes, we need to use the file path to get the correct MIME type
+    const file = await TGbot.getFile(fileId);
+    let fileLink = file.file_path ? `https://api.telegram.org/file/bot${TGbot.token}/${file.file_path}` : await TGbot.getFileLink(fileId);
+    
+    console.log(`[audio] Downloading file from: ${fileLink}`);
+    
+    // Get the file data
+    const res = await axios.get(fileLink, { 
+        responseType: "arraybuffer",
+        // For video notes, request the lowest quality
+        ...(isVideoNote && { 
+            params: { 
+                file_id: fileId,
+                quality: 'low' // Request lowest quality for faster processing
+            } 
+        })
+    });
+    
     const base64 = Buffer.from(res.data).toString("base64");
-    // Try to infer mime by link extension
+    
+    // Determine MIME type based on file extension or content
     let mime = "application/octet-stream";
-    const ext = String(fileLink).split(".").pop().toLowerCase();
-    if (ext === "oga" || ext === "ogg") mime = "audio/ogg";
-    else if (ext === "mp3") mime = "audio/mpeg";
-    else if (ext === "wav") mime = "audio/wav";
-    else if (ext === "m4a") mime = "audio/mp4";
-    else if (ext === "webm") mime = "audio/webm";
+    const ext = String(fileLink).split(".").pop().toLowerCase().split('?')[0]; // Remove query params
+    
+    if (isVideoNote) {
+        mime = "video/mp4"; // Video notes are typically in MP4 format
+    } else if (ext === "oga" || ext === "ogg") {
+        mime = "audio/ogg";
+    } else if (ext === "mp3") {
+        mime = "audio/mpeg";
+    } else if (ext === "wav") {
+        mime = "audio/wav";
+    } else if (ext === "m4a") {
+        mime = "audio/mp4";
+    } else if (ext === "webm") {
+        mime = "audio/webm";
+    } else if (ext === "mp4") {
+        mime = "video/mp4";
+    } else if (ext === "mov") {
+        mime = "video/quicktime";
+    }
+    
+    console.log(`[audio] File processed. Type: ${mime}, Size: ${base64.length} bytes`);
     return { base64, mime };
 }
 
@@ -176,22 +208,38 @@ function main(args) {
         });
     });
 
-    // Voice transcription
+    // Voice and video note transcription
     GHbot.onMessage(async (msg, chat, user) => {
         try {
-            if (!msg.voice) return;
-            // If Gemini is not properly configured, do not react to voice messages at all
+            const isVoice = !!msg.voice;
+            const isVideoNote = !!msg.video_note;
+            
+            if (!isVoice && !isVideoNote) return;
+            
+            // If Gemini is not properly configured, do not process audio/video notes
             if (!hasValidGemini) return;
+            
             const defaultModel = (config && config.geminiModel) || "gemini-pro";
             chat = ensureChatAudioSettings(chat, defaultModel);
             if (!chat.audio || !chat.audio.state) return;
 
             const lang = chat.lang;
             const modelInUse = chat.audio.model || defaultModel || "gemini-pro";
-            console.log(`[audio] Voice detected. chat=${chat.id} user=${user.id} lang=${lang} model=${modelInUse}`);
+            const mediaType = isVoice ? "voice" : "video note";
+            
+            console.log(`[audio] ${mediaType} detected. chat=${chat.id} user=${user.id} lang=${lang} model=${modelInUse}`);
+            
             // pre-reply "Please wait..."
             const waitingText = l[lang].AUDIO_PLEASE_WAIT || "Please wait...";
-            const replyOpts = { parse_mode: "HTML", reply_parameters: { chat_id: msg.chat.id, message_id: msg.message_id, allow_sending_without_reply: true } };
+            const replyOpts = { 
+                parse_mode: "HTML", 
+                reply_parameters: { 
+                    chat_id: msg.chat.id, 
+                    message_id: msg.message_id, 
+                    allow_sending_without_reply: true 
+                } 
+            };
+            
             const waitingMsg = await GHbot.sendMessage(user.id, msg.chat.id, waitingText, replyOpts);
 
             // Safety: need API key
@@ -201,12 +249,37 @@ function main(args) {
                 return;
             }
 
-            // Download voice from telegram
-            const { base64, mime } = await fetchTelegramFileAsBase64(TGbot, msg.voice.file_id);
-            console.log(`[audio] Downloaded voice file. mime=${mime} bytes=${Buffer.byteLength(base64, 'base64')}`);
+            // Download media from telegram
+            const fileId = isVoice ? msg.voice.file_id : msg.video_note.file_id;
+            const { base64, mime } = await fetchTelegramFileAsBase64(TGbot, fileId, isVideoNote);
+            console.log(`[audio] Downloaded ${mediaType} file. mime=${mime} size=${base64.length} bytes`);
+            
+            // If it's a video note, make sure we're using a supported MIME type for Gemini
+            const supportedMimeTypes = [
+                'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4',
+                'video/mp4', 'video/webm', 'video/quicktime'
+            ];
+            
+            if (!supportedMimeTypes.includes(mime)) {
+                throw new Error(`Unsupported MIME type for Gemini: ${mime}`);
+            }
 
             // Build prompt by language
-            const prompt = (chat.audio.prompts && chat.audio.prompts[lang]) || l[lang].AUDIO_PROMPT || "What is said in this audio?";
+            let prompt = (chat.audio.prompts && chat.audio.prompts[lang]) || l[lang].AUDIO_PROMPT || "What is said in this audio?";
+            
+            // Add specific instructions for video notes
+            if (isVideoNote) {
+                prompt = "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided video.\n\n" +
+                "**Crucial Instruction:** You MUST completely ignore the visual stream of the video. Your task is NOT to describe the video.\n\n" +
+                "- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n" +
+                "- **DO:** Maintain the original language of the speech.\n\n" +
+                "- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n" +
+                "- **DO NOT:** Analyze the camera work or shot composition.\n" +
+                "- **DO NOT:** Provide summaries, explanations, or any commentary.\n" +
+                "- **DO NOT:** Add headers, timestamps, or any formatting.\n\n" +
+                "Return ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\".";
+            }
+            
             const body = buildGeminiRequest(prompt, base64, mime);
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelInUse}:generateContent?key=${apiKey}`;
             const t0 = Date.now();
@@ -302,7 +375,11 @@ function main(args) {
         if (!cb.data || !cb.data.startsWith("S_AUDIOREC_DEL")) return;
         // allow only settings managers by default
         if (!(user.perms && user.perms.settings == 1)) {
-            try { GHbot.answerCallbackQuery(user.id, cb.id, { text: "Not allowed", show_alert: true }); } catch (e) {}
+            try { 
+                const lang = chat && chat.lang ? chat.lang : (user && user.lang ? user.lang : "en_en");
+                const notAllowedText = l[lang] && l[lang].NOT_ALLOWED ? l[lang].NOT_ALLOWED : "Not allowed";
+                GHbot.answerCallbackQuery(user.id, cb.id, { text: notAllowedText, show_alert: true }); 
+            } catch (e) {}
             return;
         }
         try {
