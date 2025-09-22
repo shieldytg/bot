@@ -421,6 +421,8 @@
     "OF" : "of",
     "DAY" : "Day",
     "DAYS" : "Days",
+    "MONTH" : "Month",
+    "MONTHS" : "Months",
     "HOUR" : "Hour",
     "HOURS" : "Hours",
     "MINUTE" : "Minute",

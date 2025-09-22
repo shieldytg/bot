@@ -1,4 +1,23 @@
 const { getUnixTime, secondsToHumanTime, bold, handleTelegramGroupError, getUserWarns, unwarnUser, warnUser, clearWarns } = require("./utils");
+const { getPunishmentTracker } = require("./punishmentTracker");
+
+/**
+ * Format duration in seconds to a human-readable string
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} Formatted duration string
+ */
+function formatDuration(seconds) {
+    if (seconds < 60) return `${seconds} seconds`;
+    
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+    
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'}`;
+    
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'}`;
+}
 
 l = global.LGHLangs;
 var year = 31536000;
@@ -111,6 +130,7 @@ async function silentPunish(GHbot, userId, chat, targetId, punishment, time)
 {return new Promise(async (resolve, reject)=>{try{
 
     time = time || -1;
+    const now = getUnixTime();
     var options = {};
 
     //warn
@@ -146,15 +166,94 @@ async function silentPunish(GHbot, userId, chat, targetId, punishment, time)
         await GHbot.unbanChatMember(userId, chat.id, targetId);
 
     //mute
-    if(punishment == 3)
-    {
+    if(punishment == 3) {
         options.can_send_messages = false;
+        
+        // Convert time to seconds if it's a string with units (e.g., '31s', '1h', '2d')
+        let timeInSeconds = time;
+        if (typeof time === 'string') {
+            const match = time.match(/^(\d+)([smhd])?$/i);
+            if (match) {
+                const value = parseInt(match[1]);
+                const unit = match[2] ? match[2].toLowerCase() : 's';
+                
+                switch(unit) {
+                    case 's': timeInSeconds = value; break;
+                    case 'm': timeInSeconds = value * 60; break;
+                    case 'h': timeInSeconds = value * 60 * 60; break;
+                    case 'd': timeInSeconds = value * 60 * 60 * 24; break;
+                    default: timeInSeconds = value;
+                }
+            } else {
+                timeInSeconds = parseInt(time) || -1;
+            }
+        }
+        
+        const isPermanent = timeInSeconds === -1 || timeInSeconds < 30;
+        
+        if (!isPermanent) {
+            const until = now + timeInSeconds;
+            options.until_date = until;
+            
+            // Track the timed mute
+            const tracker = getPunishmentTracker();
+            if (tracker) {
+                tracker.addPunishment(chat.id, targetId, until, 'mute');
+                console.log(`[Punishment] Added timed mute for user ${targetId} in chat ${chat.id} until ${new Date(until * 1000).toISOString()}`);
+            }
+            
+            const durationText = formatDuration(timeInSeconds);
+            console.log(`[Punishment] Muting user ${targetId} in chat ${chat.id} for ${durationText} (until ${new Date(until * 1000).toISOString()})`);
+        } else {
+            console.log(`[Punishment] Permanently muting user ${targetId} in chat ${chat.id}`);
+        }
+        
         await GHbot.restrictChatMember(userId, chat.id, targetId, options);
     }
 
     //ban
-    if(punishment == 4)
+    if(punishment == 4) {
+        // Convert time to seconds if it's a string with units (e.g., '31s', '1h', '2d')
+        let timeInSeconds = time;
+        if (typeof time === 'string') {
+            const match = time.match(/^(\d+)([smhd])?$/i);
+            if (match) {
+                const value = parseInt(match[1]);
+                const unit = match[2] ? match[2].toLowerCase() : 's';
+                
+                switch(unit) {
+                    case 's': timeInSeconds = value; break;
+                    case 'm': timeInSeconds = value * 60; break;
+                    case 'h': timeInSeconds = value * 60 * 60; break;
+                    case 'd': timeInSeconds = value * 60 * 60 * 24; break;
+                    default: timeInSeconds = value;
+                }
+            } else {
+                timeInSeconds = parseInt(time) || -1;
+            }
+        }
+        
+        const isPermanent = timeInSeconds === -1 || timeInSeconds < 30;
+        
+        if (!isPermanent) {
+            const until = now + timeInSeconds;
+            options.until_date = until;
+            
+            // Track the timed ban
+            const tracker = getPunishmentTracker();
+            if (tracker) {
+                tracker.addPunishment(chat.id, targetId, until, 'ban');
+                console.log(`[Punishment] Added timed ban for user ${targetId} in chat ${chat.id} until ${new Date(until * 1000).toISOString()}`);
+            }
+            
+            const durationText = formatDuration(timeInSeconds);
+            console.log(`[Punishment] Banning user ${targetId} in chat ${chat.id} for ${durationText} (until ${new Date(until * 1000).toISOString()})`);
+        } else {
+            console.log(`[Punishment] Permanently banning user ${targetId} in chat ${chat.id}`);
+        }
+        
         await GHbot.banChatMember(userId, chat.id, targetId, options);
+    }
 
     resolve(punishment);
 
@@ -193,16 +292,19 @@ async function punishUser(GHbot, userId, chat, targetUser, punishment, time, rea
 
         //kick
         if(punishment == 2)
-            await silentPunish(GHbot, userId, chat, targetId, punishment);
+            await silentPunish(GHbot, userId, chat, targetId, punishment, time);
 
         //mute
-        if(punishment == 3)
-            await silentPunish(GHbot, userId, chat, targetId, punishment);
-
+        if(punishment == 3) {
+            console.log(`[PunishUser] Applying mute to user ${targetId} for ${time} seconds`);
+            await silentPunish(GHbot, userId, chat, targetId, punishment, time);
+        }
 
         //ban
-        if(punishment == 4)
-            await silentPunish(GHbot, userId, chat, targetId, punishment);
+        if(punishment == 4) {
+            console.log(`[PunishUser] Applying ban to user ${targetId} for ${time} seconds`);
+            await silentPunish(GHbot, userId, chat, targetId, punishment, time);
+        }
 
         var text = genPunishText(lang, chat, targetUser, punishment, time, reason);
         var buttons = [genRevokePunishButton(lang, targetId, punishment)];
@@ -258,40 +360,69 @@ function genUnpunishText(lang, chat, targetUser, punishment, reason, db)
     if(reason)
         text+="\n"+bold(l[lang].REASON+": ")+reason+".";
 
-    return text;
-
 }
 //resolves true on success
 async function silentUnpunish(GHbot, userId, chat, targetId, punishment)
-{return new Promise(async (resolve, reject)=>{try{
+{
+    return new Promise(async (resolve, reject) => {
+    try{
+    var options = {}
+    const now = getUnixTime();
+    const timestamp = new Date(now * 1000).toISOString();
 
-    var options = {};
     //unwarn
     if(punishment == 1)
     {
-        chat = clearExpiredUserWarns(chat, targetId);
-
-        //apply unwarn
+        console.log(`[${timestamp}] [Punishment] Removing warning for user ${targetId} in chat ${chat.id}`);
         chat = unwarnUser(chat, targetId);
+        chat = clearExpiredUserWarns(chat, targetId);
+        console.log(`[${timestamp}] [Punishment] Successfully removed warning for user ${targetId} in chat ${chat.id}`);
     }
 
     //unmute
     if(punishment == 3)
     {
+        console.log(`[${timestamp}] [Punishment] Unmuting user ${targetId} in chat ${chat.id}`);
+        
+        // Remove from tracker if exists
+        const tracker = getPunishmentTracker();
+        if (tracker) {
+            const removed = tracker.removePunishment(chat.id, targetId);
+            if (removed) {
+                console.log(`[${timestamp}] [Punishment] Removed mute tracking for user ${targetId} in chat ${chat.id}`);
+            }
+        }
+        
         options = unrestrictOpts;
         await GHbot.restrictChatMember(userId, chat.id, targetId, options);
+        console.log(`[${timestamp}] [Punishment] Successfully unmuted user ${targetId} in chat ${chat.id}`);
     }
 
     //unban
     if(punishment == 4)
     {
+        console.log(`[${timestamp}] [Punishment] Unbanning user ${targetId} in chat ${chat.id}`);
+        
+        // Remove from tracker if exists
+        const tracker = getPunishmentTracker();
+        if (tracker) {
+            const removed = tracker.removePunishment(chat.id, targetId);
+            if (removed) {
+                console.log(`[${timestamp}] [Punishment] Removed ban tracking for user ${targetId} in chat ${chat.id}`);
+            }
+        }
+        
         options.only_if_banned = true;
         await GHbot.unbanChatMember(userId, chat.id, targetId, options);
+        console.log(`[${timestamp}] [Punishment] Successfully unbanned user ${targetId} in chat ${chat.id}`);
     }
 
     resolve(true);
 
-}catch(error){reject(error);}})
+}catch(error){
+    console.error(`[${new Date().toISOString()}] [Punishment] Error in silentUnpunish for user ${targetId} in chat ${chat?.id || 'unknown'}:`, error);
+    reject(error);
+}})
 }
 async function unpunishUser(GHbot, userId, chat, targetUser, punishment, reason)
 {
@@ -367,12 +498,13 @@ function applyChatBasedPunish(GHbot, userId, chat, targetUser, punishments, type
             break;
     }
 
-    if(deletion) GHbot.TGbot.deleteMessages(chat.id, [messageId])
+    if(deletion && messageId)
+        GHbot.deleteMessage(chat.id, messageId);
 
-    if(reason === "") reason = false;
-    if(punish == 0) return false;
-    
-    return punishUser(GHbot, userId, chat, targetUser, punish, PTime, reason);
+    if(punish > 0) {
+        console.log(`[applyChatBasedPunish] Applying punishment ${punish} to user ${targetUser.id} for ${PTime || 'default'} seconds`);
+        punishUser(GHbot, userId, chat, targetUser, punish, PTime, reason);
+    }
 }
 
 module.exports = {

@@ -2,7 +2,7 @@ var LGHelpTemplate = require("../GHbot.js");
 const GHCommand = require("../api/tg/LGHCommand.js");
 const { punishUser, unpunishUser, silentPunish, silentUnpunish, genPunishText, genUnpunishButtons, genUnpunishText, genRevokePunishButton } = require("../api/utils/punishment.js");
 const { LGHUserNameByMessage } = require("../api/tg/tagResolver.js");
-const { parseHumanTime, telegramErrorToText, unwarnUser, clearWarns, LGHUserName, bold, getUnixTime } = require("../api/utils/utils.js");
+const { parseDurationAndReason, parseHumanTime, telegramErrorToText, unwarnUser, clearWarns, LGHUserName, bold, getUnixTime } = require("../api/utils/utils.js");
 const RM = require("../api/utils/rolesManager.js");
 
 function main(args)
@@ -83,9 +83,19 @@ function main(args)
             var reason = false;
             if(command.args) //TODO: send an error if user enter a time higher than 1 year
             {
-                var identifiedTime = parseHumanTime(command.args);
+                // Prefer strict duration tokens like 1d2h30m; fallback to chrono if not matched
+                var parsed = parseDurationAndReason(command.args);
+                var identifiedTime = parsed.seconds || 0;
+                // Allow time only for warn/mute/ban; kick doesn't support time
                 time = (punishment != 2 && identifiedTime >= 30) ? identifiedTime : false;
-                if(!time) reason = command.args;
+                // Keep reason whether or not time parsed
+                reason = parsed.reason || false;
+                // If nothing parsed by our function, fallback to previous chrono behavior
+                if(!time && !reason) {
+                    var chronoSeconds = parseHumanTime(command.args);
+                    time = (punishment != 2 && chronoSeconds >= 30) ? chronoSeconds : false;
+                    if(!time) reason = command.args;
+                }
             }
             
             if(target.perms.immune == 1)

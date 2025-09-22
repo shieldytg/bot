@@ -166,6 +166,93 @@ function parseHumanTime(text) {
     var totalSeconds = Math.floor(millisecondsDifference / 1000);
     return ++totalSeconds;
 }
+
+/**
+ * Parse a leading duration and optional reason from a text.
+ * Supports tokens: s, m, h, d, w (e.g., 30s, 15m, 2h, 1d, 1w)
+ * Also supports chained compact forms like: 1d2h30m, 2h15m, 90m
+ * Returns seconds>=0 and remaining reason (string or false if absent).
+ * If no valid duration is detected at the beginning, seconds=0 and reason=text.
+ * @param {string} text
+ * @returns {{seconds: number, reason: (string|false)}}
+ */
+function parseDurationAndReason(text) {
+    if (!isString(text)) return { seconds: 0, reason: false };
+    let str = text.trim();
+    if (str.length === 0) return { seconds: 0, reason: false };
+
+    // Try to parse compact chained duration at the start (e.g., 1d2h30m)
+    // Pattern: one or more (number + unit) pairs at the beginning, with optional spaces between pairs
+    const unitMap = {
+        s: 1,
+        sec: 1,
+        secs: 1,
+        second: 1,
+        seconds: 1,
+        m: 60,
+        min: 60,
+        mins: 60,
+        minute: 60,
+        minutes: 60,
+        h: 3600,
+        hr: 3600,
+        hour: 3600,
+        hours: 3600,
+        d: 86400,
+        day: 86400,
+        days: 86400,
+        mo: 2592000,       // month (~30 days)
+        mon: 2592000,
+        month: 2592000,
+        months: 2592000,
+        w: 604800,
+        wk: 604800,
+        week: 604800,
+        weeks: 604800,
+    };
+
+    // Match from the beginning: sequences like "10m", "1h", optionally spaced like "1h 30m"
+    const pairRe = /^(\s*(\d+)\s*([a-zA-Z]+))+\b/;
+    let seconds = 0;
+    let consumedLen = 0;
+    const m = pairRe.exec(str);
+    if (m) {
+        // We need to iterate through the matched segment to accumulate pairs
+        const head = m[0];
+        // Extract all number+unit within head
+        const eachRe = /(\d+)\s*([a-zA-Z]+)/g;
+        let em;
+        while ((em = eachRe.exec(head)) !== null) {
+            const num = Number(em[1]);
+            const unitKey = em[2].toLowerCase();
+            let base = unitMap[unitKey];
+            // support short forms by first letter when unique
+            if (!base && unitKey.length > 1) {
+                const short = unitKey[0];
+                base = unitMap[short];
+            }
+            if (!base || !Number.isFinite(num)) { seconds = 0; break; }
+            seconds += num * base;
+        }
+        if (seconds > 0) {
+            consumedLen = head.length;
+        }
+    }
+
+    // If nothing parsed, fallback to chrono only if the whole string contains a quick time expression
+    if (seconds === 0) {
+        const ch = parseHumanTime(str);
+        if (ch > 0) {
+            seconds = ch;
+            // Return the parsed seconds and no reason
+            return { seconds, reason: false };
+        }
+        return { seconds: 0, reason: str.length > 0 ? str : false };
+    }
+
+    const rest = str.substring(consumedLen).trim();
+    return { seconds, reason: rest.length > 0 ? rest : false };
+}
 /**
  * @param {Number} seconds 
  * @returns 
@@ -1765,6 +1852,7 @@ module.exports =
     textToPunishment : textToPunishment,
     punishmentToText : punishmentToText,
     punishmentToFullText : punishmentToFullText,
+    parseDurationAndReason : parseDurationAndReason,
     parseHumanTime : parseHumanTime,
     secondsToTime : secondsToTime,
     secondsToHumanTime : secondsToHumanTime,

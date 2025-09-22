@@ -45,6 +45,17 @@ async function main(config) {
     //load tagResolver
     TR.load(config);
 
+    // Initialize PunishmentTracker
+    const { getPunishmentTracker } = require("./api/utils/punishmentTracker");
+    const punishmentTracker = getPunishmentTracker(db);
+    if (punishmentTracker) {
+        punishmentTracker.init();
+        // Ensure the tracker is stopped when the process exits
+        process.on('exit', () => punishmentTracker.stop());
+        process.on('SIGINT', () => process.exit());
+        process.on('SIGTERM', () => process.exit());
+    }
+
     // Note: plugins are auto-loaded by the modules loader (see index.js). Avoid manual require here to prevent double registration.
 
     //some simplified variables
