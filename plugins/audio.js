@@ -8,7 +8,7 @@ function ensureChatAudioSettings(chat, defaultModel) {
         chat.audio = {
             state: true,
             provider: "gemini",
-            model: defaultModel || "gemini-pro", // default from config if provided
+            model: defaultModel || "gemini-2.5-flash", // default from config if provided
             prompts: {} // { [lang]: string }
         };
     }
@@ -189,7 +189,7 @@ function main(args) {
         if (msg.chat.isGroup && chat.id != msg.chat.id) return;
         if (!(user.perms && user.perms.settings == 1)) return;
 
-        const defaultModel = (config && config.geminiModel) || "gemini-pro";
+        const defaultModel = (config && config.geminiModel) || "gemini-2.5-flash";
         chat = ensureChatAudioSettings(chat, defaultModel);
         const lang = chat.lang;
         const newPrompt = (msg.text || "").trim();
@@ -219,12 +219,12 @@ function main(args) {
             // If Gemini is not properly configured, do not process audio/video notes
             if (!hasValidGemini) return;
             
-            const defaultModel = (config && config.geminiModel) || "gemini-pro";
+            const defaultModel = (config && config.geminiModel) || "gemini-2.5-flash";
             chat = ensureChatAudioSettings(chat, defaultModel);
             if (!chat.audio || !chat.audio.state) return;
 
             const lang = chat.lang;
-            const modelInUse = chat.audio.model || defaultModel || "gemini-pro";
+            const modelInUse = chat.audio.model || defaultModel || "gemini-2.5-flash";
             const mediaType = isVoice ? "voice" : "video note";
             
             console.log(`[audio] ${mediaType} detected. chat=${chat.id} user=${user.id} lang=${lang} model=${modelInUse}`);
