@@ -87,6 +87,8 @@ node index.js
 
 ---
 
+Original - https://github.com/Sp3rick/GroupHelp
+
 ## 📖 Useful Links
 
 * [node-telegram-bot-api](https://github.com/yagop/node-telegram-bot-api)
