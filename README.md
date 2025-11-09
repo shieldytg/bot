@@ -35,7 +35,7 @@ node -v
 
    ```bash
    git clone https://github.com/shieldytg/bot.git
-   cd shieldy
+   cd bot
    ```
 
 2. Install required build tools depending on your OS:
