@@ -104,9 +104,6 @@ node -v
 - **minWarns** – Minimum number of warnings.  
 - **maxWarns** – Maximum number of warnings.
 
----
-
-Якщо хочеш — можу зробити це пунктом у markdown-таблиці або відформатувати під стиль всього README.
 
 ---
 
