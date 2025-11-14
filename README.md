@@ -78,6 +78,36 @@ node -v
    Then open `config.json` and insert your **bot token** and other required settings.
    See [configuration documentation](https://sp3rick.github.io/GroupHelp/wiki/configuration/) for details.
 
+5. Fill in the settings inside `config.json`. Below is a description of all required fields:
+
+- **botToken** – Your bot token from @BotFather.  
+- **botStaff** – Your Telegram ID (use @GetMyChatID_Bot).  
+- **deleteChatDataAfterBotRemove** – Whether to remove chat data from the database after the bot is removed from the group.  
+- **overwriteChatDataIfReAddedToGroup** – Whether to reset all chat data if the bot is added again.  
+- **allowExternalApi** – Allow or deny access to third-party APIs.  
+- **geminiApiKey** – Gemini API key used for voice recognition.  
+  **If you want to disable audio recognition, leave the default value.**  
+  Get your key here: https://aistudio.google.com/app/api-keys  
+- **geminiModel** – Gemini model to be used.  
+- **reserveLang** – Reserve language.  
+- **saveDatabaseSeconds** – How often the database should be saved (in seconds).  
+- **saveTagResolverSeconds** – How often the bot should refresh the user’s username.  
+- **maxCallbackAge** – Maximum allowed callback age.  
+- **preventSetUselessRoles** – Prevent assigning unnecessary roles.  
+- **chatWhitelist** – List of allowed chats (used only if `privateWhitelist` is enabled).  
+- **privateWhitelist** – Restrict bot usage only to the chats listed in `chatWhitelist`.  
+- **chatBlacklist** – List of prohibited chats.  
+- **ANTIFLOOD_msgMin** – Minimum number of messages after which the system considers it flooding.  
+- **ANTIFLOOD_msgMax** – Maximum number of messages allowed during flood detection.  
+- **ANTIFLOOD_timeMin** – Minimum flood time window.  
+- **ANTIFLOOD_timeMax** – Maximum flood time window.  
+- **minWarns** – Minimum number of warnings.  
+- **maxWarns** – Maximum number of warnings.
+
+---
+
+Якщо хочеш — можу зробити це пунктом у markdown-таблиці або відформатувати під стиль всього README.
+
 ---
 
 ## ▶️ Run the bot
