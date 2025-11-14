@@ -73,6 +73,7 @@ node -v
    ```bash
    cp config.json.example config.json
    ```
+   Or rename config.json.example to config.json
 
    Then open `config.json` and insert your **bot token** and other required settings.
    See [configuration documentation](https://sp3rick.github.io/GroupHelp/wiki/configuration/) for details.
