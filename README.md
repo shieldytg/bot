@@ -40,7 +40,7 @@ node -v
 
 2. Install required build tools depending on your OS:
 
-   **Windows** (requires [Chocolatey](https://chocolatey.org/)):
+   **Windows** (requires [Chocolatey](https://chocolatey.org/install#individual)):
 
    ```bash
    choco install python visualstudio2022-workload-vctools -y
