@@ -4,16 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-// ── Site definitions ──────────────────────────────────────────────────────
+// ── Sites supported in inline mode ───────────────────────────────────────
 const SITES = {
-    youtube:   { hosts: ["youtube.com", "youtu.be"] },
-    tiktok:    { hosts: ["tiktok.com", "vm.tiktok.com"] },
-    instagram: { hosts: ["instagram.com"] },
-    facebook:  { hosts: ["facebook.com", "fb.com", "fb.watch"] },
-    twitter:   { hosts: ["twitter.com", "x.com", "t.co"] },
-    vimeo:     { hosts: ["vimeo.com"] },
-    twitch:    { hosts: ["twitch.tv"] },
-    reddit:    { hosts: ["reddit.com", "redd.it"] },
+    youtube: { hosts: ["youtube.com", "youtu.be", "music.youtube.com"] },
+    tiktok:  { hosts: ["tiktok.com", "vm.tiktok.com", "vt.tiktok.com"] },
 };
 
 const SHARD_RE   = /\.f\d+\.[a-z0-9]+$/i;
@@ -98,6 +92,12 @@ function getCached(url) {
 function setCache(url, data) {
     resultCache.set(url, { ...data, ts: Date.now() });
 }
+
+// Clear entire cache every 2 hours
+setInterval(() => {
+    resultCache.clear();
+    console.log("[inline] cache cleared");
+}, 2 * 3600 * 1000);
 
 // ── Download → upload → return {fileId, isAudio, title} ──────────────────
 async function downloadAndUpload(TGbot, url, uploadChatId) {
@@ -194,8 +194,9 @@ function main(args) {
             console.log("[inline] starting background download:", targetUrl);
             const p = downloadAndUpload(TGbot, targetUrl, uploadChatId)
                 .then(r => { setCache(targetUrl, r); console.log("[inline] background download cached:", targetUrl); return r; })
-                .catch(e => console.log("[inline] background download failed:", e.message))
                 .finally(() => pendingByUrl.delete(targetUrl));
+            // Log errors without swallowing — p itself still rejects for chosen_inline_result to catch
+            p.catch(e => console.log("[inline] background download failed:", e.message));
             pendingByUrl.set(targetUrl, p);
         }
 

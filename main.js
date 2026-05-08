@@ -253,6 +253,9 @@ async function main(config) {
 
     TGbot.on( "callback_query", async (cb) => { try {
 
+        // Inline message callbacks have no cb.message (only inline_message_id) — skip them
+        if(!cb.message) return;
+
         if(!isChatAllowed(config, cb.message.chat.id)) return;
 
         TR.logCb(cb);
