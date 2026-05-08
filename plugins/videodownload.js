@@ -142,9 +142,6 @@ function main(args) {
             const info = await ytDlpInfo(targetUrl);
             const durationSec = info.duration || 0;
             const durationMin = durationSec / 60;
-            // width/height are present for any video; vcodec can be "none" on adaptive streams
-            const isAudioOnly = !info.width && !info.height &&
-                (!info.formats || !info.formats.some(f => f.vcodec && f.vcodec !== "none"));
 
             if (durationMin > LONG_VIDEO_MINUTES) {
                 await editStatus(l[lang].VIDEODL_TOO_LONG);
@@ -152,47 +149,38 @@ function main(args) {
                 return;
             }
 
-            if (isAudioOnly) {
-                await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
-                    "-x", "--audio-format", "mp3", "--audio-quality", "0",
-                ]);
+            const maxHeight = durationMin < HIGH_QUALITY_THRESHOLD_MINUTES ? 1080 : 720;
+            const fmt = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxHeight}]+bestaudio/best[height<=${maxHeight}]/best`;
 
-                const filePath = path.join(tmpDir, "output.mp3");
-                const actualPath = fs.existsSync(filePath) ? filePath : firstFileIn(tmpDir);
-                if (!actualPath) throw new Error("audio file not found");
+            // Use %(ext)s so the real extension is always in the filename — no guessing
+            await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
+                "-f", fmt, "--merge-output-format", "mp4",
+            ]);
 
-                if (fs.statSync(actualPath).size > MAX_FILE_BYTES) {
-                    await editStatus(l[lang].VIDEODL_TOO_LARGE);
-                    rmDir(tmpDir);
-                    return;
-                }
+            const actualPath = firstFileIn(tmpDir);
+            if (!actualPath) throw new Error("file not found after download");
 
+            console.log("[videodownload] downloaded:", actualPath);
+
+            if (fs.statSync(actualPath).size > MAX_FILE_BYTES) {
+                await editStatus(l[lang].VIDEODL_TOO_LARGE);
+                rmDir(tmpDir);
+                return;
+            }
+
+            // Decide send method by the actual file extension yt-dlp produced
+            const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
+            const ext = path.extname(actualPath).toLowerCase();
+
+            if (AUDIO_EXTS.includes(ext)) {
                 await TGbot.sendAudio(msg.chat.id, fs.createReadStream(actualPath), {
                     caption: (info.title || "").slice(0, 1024),
                     duration: info.duration || undefined,
                     performer: (info.uploader || info.artist || "").slice(0, 300),
                     title: (info.title || "").slice(0, 300),
                     reply_parameters: { chat_id: msg.chat.id, message_id: msg.message_id, allow_sending_without_reply: true },
-                }, { filename: path.basename(actualPath), contentType: "audio/mpeg" });
-
+                }, { filename: path.basename(actualPath) });
             } else {
-                const maxHeight = durationMin < HIGH_QUALITY_THRESHOLD_MINUTES ? 1080 : 720;
-                const fmt = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxHeight}]+bestaudio/best[height<=${maxHeight}]/best`;
-
-                await ytDlpRun(targetUrl, path.join(tmpDir, "output.mp4"), [
-                    "-f", fmt, "--merge-output-format", "mp4",
-                ]);
-
-                const filePath = path.join(tmpDir, "output.mp4");
-                const actualPath = fs.existsSync(filePath) ? filePath : firstFileIn(tmpDir);
-                if (!actualPath) throw new Error("video file not found");
-
-                if (fs.statSync(actualPath).size > MAX_FILE_BYTES) {
-                    await editStatus(l[lang].VIDEODL_TOO_LARGE);
-                    rmDir(tmpDir);
-                    return;
-                }
-
                 await TGbot.sendVideo(msg.chat.id, fs.createReadStream(actualPath), {
                     caption: (info.title || "").slice(0, 1024),
                     duration: info.duration || undefined,
