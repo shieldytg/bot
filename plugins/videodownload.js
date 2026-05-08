@@ -170,14 +170,25 @@ function main(args) {
             }
 
             const maxHeight = durationMin < HIGH_QUALITY_THRESHOLD_MINUTES ? 1080 : 720;
-            // With ffmpeg: merges best video+audio. Without ffmpeg: best[ext=mp4] picks a
-            // combined stream. Final /best catches any remaining format (audio-only included).
-            const fmt = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${maxHeight}][ext=mp4]/best[height<=${maxHeight}]/best[ext=mp4]/best`;
+            const fmtMerge    = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxHeight}]+bestaudio`;
+            const fmtCombined = `best[height<=${maxHeight}][ext=mp4]/best[height<=${maxHeight}]/best[ext=mp4]/best`;
 
-            // Use %(ext)s so the real extension is always in the filename — no guessing
             await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
-                "-f", fmt, "--merge-output-format", "mp4",
+                "-f", fmtMerge, "--merge-output-format", "mp4",
             ]);
+
+            // yt-dlp exits 0 even when ffmpeg is missing — it downloads shards but can't merge.
+            // Detect this: if only shard files exist (*.fNNN.*), ffmpeg wasn't available.
+            // Wipe shards and retry with a combined-stream format that needs no merging.
+            const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part",".ytdl"].some(e => f.endsWith(e)));
+            const hasNonShard = tmpFiles.some(f => !SHARD_RE.test(f));
+            if (!hasNonShard && tmpFiles.length > 0) {
+                console.log("[videodownload] no merged file found (ffmpeg missing?), retrying with combined format");
+                tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
+                await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
+                    "-f", fmtCombined,
+                ]);
+            }
 
             const actualPath = firstFileIn(tmpDir);
             if (!actualPath) throw new Error("file not found after download");
