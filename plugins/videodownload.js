@@ -97,16 +97,23 @@ function ytDlpRun(url, outTemplate, extraArgs) {
 
 const VIDEO_EXTS = [".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".ts"];
 const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
+// yt-dlp names intermediate download shards like "output.f137.mp4" or "output.f140.m4a"
+const SHARD_RE = /\.f\d+\.[a-z0-9]+$/i;
 
 function firstFileIn(dir) {
     try {
-        const skip = [".part", ".ytdl", ".jpg", ".jpeg", ".png", ".webp", ".json", ".description"];
-        const files = fs.readdirSync(dir).filter(f => !skip.some(e => f.endsWith(e)));
-        console.log("[videodownload] files in tmpDir:", files);
-        if (!files.length) return null;
-        // Prefer video files — yt-dlp may leave intermediate audio shards alongside the merged mp4
-        const video = files.find(f => VIDEO_EXTS.some(e => f.endsWith(e)));
-        return path.join(dir, video || files[0]);
+        const skipExts = [".part", ".ytdl", ".jpg", ".jpeg", ".png", ".webp", ".json", ".description"];
+        const all = fs.readdirSync(dir).filter(f => !skipExts.some(e => f.endsWith(e)));
+        console.log("[videodownload] files in tmpDir:", all);
+        if (!all.length) return null;
+
+        // Prefer merged output (no format-ID in name) over raw shards
+        const nonShards = all.filter(f => !SHARD_RE.test(f));
+        const candidates = nonShards.length ? nonShards : all;
+
+        // Among candidates, prefer video files
+        const video = candidates.find(f => VIDEO_EXTS.some(e => f.endsWith(e)));
+        return path.join(dir, video || candidates[0]);
     } catch (_) { return null; }
 }
 
@@ -128,9 +135,10 @@ function main(args) {
 
         const urls = extractUrls(msg);
         if (!urls.length) return;
+        console.log("[videodownload] detected URLs:", urls);
 
         const targetUrl = findSupportedUrl(urls, chat.videodownload.sites);
-        if (!targetUrl) return;
+        if (!targetUrl) { console.log("[videodownload] no supported URL matched, sites:", chat.videodownload.sites); return; }
 
         const lang = chat.lang;
 
