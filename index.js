@@ -104,16 +104,17 @@ async function main()
 
 
     
-    //unload management
-    var quitFunc = ()=>{
-        TR.save();
-        // Flush all in-memory chat data to disk before exit
+    // Save everything on exit — fires for ANY process.exit() call, including the one
+    // registered by punishmentTracker in main.js which previously ran before this code
+    // and terminated the process before quitFunc could flush the database.
+    process.on('exit', () => {
+        try { TR.save(); } catch(_) {}
         if (global.LGHSaveAll) global.LGHSaveAll.forEach(fn => { try { fn(); } catch(_) {} });
-        process.exit(0);
-    }
-    process.on('SIGINT', quitFunc);  // CTRL+C
-    process.on('SIGQUIT', quitFunc); // Keyboard quit
-    process.on('SIGTERM', quitFunc); // `kill` command
+    });
+
+    process.on('SIGINT',  () => process.exit(0));
+    process.on('SIGQUIT', () => process.exit(0));
+    process.on('SIGTERM', () => process.exit(0));
 
 
     console.log("#Shieldy started#")
