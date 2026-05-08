@@ -142,7 +142,9 @@ function main(args) {
             const info = await ytDlpInfo(targetUrl);
             const durationSec = info.duration || 0;
             const durationMin = durationSec / 60;
-            const isAudioOnly = !info.vcodec || info.vcodec === "none";
+            // width/height are present for any video; vcodec can be "none" on adaptive streams
+            const isAudioOnly = !info.width && !info.height &&
+                (!info.formats || !info.formats.some(f => f.vcodec && f.vcodec !== "none"));
 
             if (durationMin > LONG_VIDEO_MINUTES) {
                 await editStatus(l[lang].VIDEODL_TOO_LONG);
