@@ -173,18 +173,25 @@ function main(args) {
             const fmtMerge    = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxHeight}]+bestaudio`;
             const fmtCombined = `best[height<=${maxHeight}][ext=mp4]/best[height<=${maxHeight}]/best[ext=mp4]/best`;
 
-            await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
-                "-f", fmtMerge, "--merge-output-format", "mp4",
-            ]);
+            let needFallback = false;
+            try {
+                await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
+                    "-f", fmtMerge, "--merge-output-format", "mp4",
+                ]);
+                // Also check: yt-dlp exits 0 but only shards exist (ffmpeg missing)
+                const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part",".ytdl"].some(e => f.endsWith(e)));
+                if (!tmpFiles.some(f => !SHARD_RE.test(f)) && tmpFiles.length > 0) {
+                    console.log("[videodownload] only shards found (ffmpeg missing?), retrying with combined format");
+                    tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
+                    needFallback = true;
+                }
+            } catch (_) {
+                // Format unavailable (e.g. TikTok combined-only) — fall back to best single stream
+                console.log("[videodownload] merge format unavailable, retrying with combined format");
+                needFallback = true;
+            }
 
-            // yt-dlp exits 0 even when ffmpeg is missing — it downloads shards but can't merge.
-            // Detect this: if only shard files exist (*.fNNN.*), ffmpeg wasn't available.
-            // Wipe shards and retry with a combined-stream format that needs no merging.
-            const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part",".ytdl"].some(e => f.endsWith(e)));
-            const hasNonShard = tmpFiles.some(f => !SHARD_RE.test(f));
-            if (!hasNonShard && tmpFiles.length > 0) {
-                console.log("[videodownload] no merged file found (ffmpeg missing?), retrying with combined format");
-                tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
+            if (needFallback) {
                 await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
                     "-f", fmtCombined,
                 ]);

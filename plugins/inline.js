@@ -112,11 +112,19 @@ async function downloadAndUpload(TGbot, url, uploadChatId) {
         const fmtMerge    = `bestvideo[height<=${maxH}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxH}]+bestaudio`;
         const fmtCombined = `best[height<=${maxH}][ext=mp4]/best[height<=${maxH}]/best[ext=mp4]/best`;
 
-        await ytDlpRun(url, path.join(tmpDir, "output.%(ext)s"), ["-f", fmtMerge, "--merge-output-format", "mp4"]);
+        let needFallback = false;
+        try {
+            await ytDlpRun(url, path.join(tmpDir, "output.%(ext)s"), ["-f", fmtMerge, "--merge-output-format", "mp4"]);
+            const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part", ".ytdl"].some(e => f.endsWith(e)));
+            if (!tmpFiles.some(f => !SHARD_RE.test(f)) && tmpFiles.length > 0) {
+                tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
+                needFallback = true;
+            }
+        } catch (_) {
+            needFallback = true;
+        }
 
-        const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part", ".ytdl"].some(e => f.endsWith(e)));
-        if (!tmpFiles.some(f => !SHARD_RE.test(f)) && tmpFiles.length > 0) {
-            tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
+        if (needFallback) {
             await ytDlpRun(url, path.join(tmpDir, "output.%(ext)s"), ["-f", fmtCombined]);
         }
 
