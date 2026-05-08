@@ -20,6 +20,8 @@ An open-source re-creation of **Telegram Group Manager — Group Help**, built w
 * **Node.js 20.x** (⚠️ only this version is supported)
 * **npm** (comes with Node.js)
 * Python 3, `make`, `g++`, `node-gyp` (depending on OS)
+* **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** – required for the video download feature
+* **[ffmpeg](https://ffmpeg.org)** *(optional)* – required for 1080p quality on YouTube; without it the bot falls back to 720p combined streams
 
 Check your Node.js version:
 
@@ -78,7 +80,14 @@ node -v
    Then open `config.json` and insert your **bot token** and other required settings.
    See [configuration documentation](https://sp3rick.github.io/GroupHelp/wiki/configuration/) for details.
 
-5. Fill in the settings inside `config.json`. Below is a description of all required fields:
+5. Enable inline mode and inline feedback in [@BotFather](https://t.me/BotFather) to allow users to download videos from any chat using `@YourBot <url>`:
+
+   - Send `/setinline` → select your bot → enter a placeholder text (e.g. `Paste a video link`)
+   - Open your bot in WEB UI → select your bot → Open settings and set inline feedback to `100%`
+
+   Without these steps the inline feature will not work.
+
+6. Fill in the settings inside `config.json`. Below is a description of all required fields:
 
 - **botToken** – Your bot token from @BotFather.  
 - **botStaff** – Your Telegram ID (use @GetMyChatID_Bot).  
@@ -103,6 +112,15 @@ node -v
 - **ANTIFLOOD_timeMax** – Maximum flood time window.  
 - **minWarns** – Minimum number of warnings.  
 - **maxWarns** – Maximum number of warnings.
+- **inlineDumpChatId** *(optional)* – Chat ID of a private channel or group used by the inline video download feature.  
+  When a user requests a video via inline mode (`@bot <url>`), the bot must upload the file somewhere to obtain a Telegram `file_id` before it can deliver the result inline. This field specifies where those uploads go.  
+  **How to set it up:**
+  1. Create a private Telegram channel (e.g. *My Bot Dump*).
+  2. Add your bot as an administrator with permission to post messages.
+  3. Forward any message from that channel to [@GetMyChatID_Bot](https://t.me/GetMyChatID_Bot) to get its chat ID (it will be a negative number like `-1001234567890`).
+  4. Set `"inlineDumpChatId": -1001234567890` in `config.json`.
+
+  If left as `null`, the bot will attempt to upload to the requesting user's private chat instead, which requires that user to have started the bot with `/start` beforehand.
 
 
 ---
