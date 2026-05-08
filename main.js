@@ -24,7 +24,7 @@ async function main(config) {
     console.log("Starting a bot...")
     
     var TGbot = new TelegramBot(config.botToken, {polling: true});
-    await TGbot.setWebHook("",{allowed_updates: JSON.stringify(["message", "edited_message", "edited_channel_post", "callback_query", "inline_query", "message_reaction", "message_reaction_count", "chat_member"])})
+    await TGbot.setWebHook("",{allowed_updates: JSON.stringify(["message", "edited_message", "edited_channel_post", "callback_query", "inline_query", "chosen_inline_result", "message_reaction", "message_reaction_count", "chat_member"])})
     const bot = await TGbot.getMe();
     TGbot.me = bot;
 

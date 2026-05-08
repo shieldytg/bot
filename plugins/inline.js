@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-// ── Site definitions (same as videodownload.js) ───────────────────────────
+// ── Site definitions ──────────────────────────────────────────────────────
 const SITES = {
     youtube:   { hosts: ["youtube.com", "youtu.be"] },
     tiktok:    { hosts: ["tiktok.com", "vm.tiktok.com"] },
@@ -19,11 +19,10 @@ const SITES = {
 const SHARD_RE   = /\.f\d+\.[a-z0-9]+$/i;
 const VIDEO_EXTS = [".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".ts"];
 const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
-const MAX_FILE_BYTES              = 49 * 1024 * 1024;
-const LONG_VIDEO_MINUTES          = 60;
-const HIGH_QUALITY_THRESHOLD_MIN  = 25;
-const INLINE_ANSWER_TIMEOUT_MS    = 9000; // must answer before Telegram's ~10 s window
-const CACHE_TTL                   = 3600 * 1000; // 1 hour
+const MAX_FILE_BYTES             = 49 * 1024 * 1024;
+const LONG_VIDEO_MINUTES         = 60;
+const HIGH_QUALITY_THRESHOLD_MIN = 25;
+const CACHE_TTL                  = 3600 * 1000;
 
 // ── URL helpers ───────────────────────────────────────────────────────────
 function extractUrlsFromText(text) {
@@ -65,13 +64,8 @@ function ytDlpInfo(url) {
 
 function ytDlpRun(url, outTemplate, extraArgs) {
     return new Promise((resolve, reject) => {
-        let stderr = "";
         const p = spawn("yt-dlp", ["--no-playlist", ...extraArgs, "-o", outTemplate, url]);
-        p.stderr.on("data", d => { stderr += d; });
-        p.on("close", code => {
-            if (code !== 0) reject(new Error("yt-dlp exit " + code));
-            else resolve();
-        });
+        p.on("close", code => { if (code !== 0) reject(new Error("yt-dlp exit " + code)); else resolve(); });
         p.on("error", reject);
     });
 }
@@ -92,8 +86,9 @@ function rmDir(dir) {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
 }
 
-// ── In-memory cache keyed by URL ──────────────────────────────────────────
-const resultCache = new Map();
+// ── Cache & dedup ─────────────────────────────────────────────────────────
+const resultCache    = new Map(); // url -> {fileId, isAudio, title, ts}
+const pendingByUrl   = new Map(); // url -> Promise<result>  (dedup concurrent requests)
 
 function getCached(url) {
     const e = resultCache.get(url);
@@ -104,7 +99,7 @@ function setCache(url, data) {
     resultCache.set(url, { ...data, ts: Date.now() });
 }
 
-// ── Core download → upload → return file_id ───────────────────────────────
+// ── Download → upload → return {fileId, isAudio, title} ──────────────────
 async function downloadAndUpload(TGbot, url, uploadChatId) {
     const tmpDir = path.join(os.tmpdir(), "shieldy_inl_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8));
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -117,11 +112,8 @@ async function downloadAndUpload(TGbot, url, uploadChatId) {
         const fmtMerge    = `bestvideo[height<=${maxH}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxH}]+bestaudio`;
         const fmtCombined = `best[height<=${maxH}][ext=mp4]/best[height<=${maxH}]/best[ext=mp4]/best`;
 
-        await ytDlpRun(url, path.join(tmpDir, "output.%(ext)s"), [
-            "-f", fmtMerge, "--merge-output-format", "mp4",
-        ]);
+        await ytDlpRun(url, path.join(tmpDir, "output.%(ext)s"), ["-f", fmtMerge, "--merge-output-format", "mp4"]);
 
-        // Fallback: if only shard files remain, ffmpeg wasn't available
         const tmpFiles = fs.readdirSync(tmpDir).filter(f => ![".part", ".ytdl"].some(e => f.endsWith(e)));
         if (!tmpFiles.some(f => !SHARD_RE.test(f)) && tmpFiles.length > 0) {
             tmpFiles.forEach(f => { try { fs.unlinkSync(path.join(tmpDir, f)); } catch(_){} });
@@ -129,26 +121,26 @@ async function downloadAndUpload(TGbot, url, uploadChatId) {
         }
 
         const actualPath = firstFileIn(tmpDir);
-        if (!actualPath) throw new Error("file not found");
+        if (!actualPath) throw new Error("not_found");
         if (fs.statSync(actualPath).size > MAX_FILE_BYTES) throw new Error("too_large");
 
-        const ext = path.extname(actualPath).toLowerCase();
+        const ext     = path.extname(actualPath).toLowerCase();
         const isAudio = AUDIO_EXTS.includes(ext);
 
         let fileId;
         if (isAudio) {
             const sent = await TGbot.sendAudio(uploadChatId, fs.createReadStream(actualPath), {
-                title: (info.title || "").slice(0, 300),
-                performer: (info.uploader || "").slice(0, 300),
-                duration: info.duration || undefined,
+                title:    (info.title    || "").slice(0, 300),
+                performer:(info.uploader || "").slice(0, 300),
+                duration: info.duration  || undefined,
                 disable_notification: true,
             }, { filename: path.basename(actualPath) });
             fileId = sent.audio.file_id;
         } else {
             const sent = await TGbot.sendVideo(uploadChatId, fs.createReadStream(actualPath), {
                 duration: info.duration || undefined,
-                width: info.width || undefined,
-                height: info.height || undefined,
+                width:    info.width    || undefined,
+                height:   info.height   || undefined,
                 supports_streaming: true,
                 disable_notification: true,
             }, { filename: path.basename(actualPath), contentType: "video/mp4" });
@@ -161,72 +153,105 @@ async function downloadAndUpload(TGbot, url, uploadChatId) {
     }
 }
 
-// ── Build inline result from cached data ──────────────────────────────────
-function buildResults({ fileId, isAudio, title }) {
-    return isAudio
-        ? [{ type: "audio", id: "1", audio_file_id: fileId, title: title || "Audio" }]
-        : [{ type: "video", id: "1", video_file_id: fileId, title: title || "Video" }];
-}
-
-// ── Plugin entry point ────────────────────────────────────────────────────
+// ── Plugin ────────────────────────────────────────────────────────────────
 function main(args) {
     const GHbot = new LGHelpTemplate(args);
-    const { TGbot, config } = GHbot;
-
+    const { TGbot, db, config } = GHbot;
+    const l = global.LGHLangs;
     const dumpChatId = config.inlineDumpChatId || null;
 
+    function userLang(userId) {
+        try { return (db.users.get(userId) || {}).lang || config.reserveLang; } catch(_) { return config.reserveLang; }
+    }
+
+    // ── inline_query: validate URL, answer instantly with "Send" button ───
     TGbot.on("inline_query", async (query) => {
         const text    = (query.query || "").trim();
         const queryId = query.id;
         const userId  = query.from.id;
 
-        const answer = (results, opts = {}) =>
-            TGbot.answerInlineQuery(queryId, results, opts).catch(() => {});
+        const empty = (opts = {}) => TGbot.answerInlineQuery(queryId, [], { cache_time: 0, ...opts }).catch(() => {});
 
-        // Empty query
-        if (!text) { await answer([], { cache_time: 0 }); return; }
+        if (!text) { await empty(); return; }
 
         const targetUrl = findSupportedUrl(extractUrlsFromText(text));
-        if (!targetUrl) { await answer([], { cache_time: 0 }); return; }
+        if (!targetUrl) { await empty(); return; }
 
-        console.log("[inline] query from", userId, "→", targetUrl);
+        const lang = userLang(userId);
+        let domain;
+        try { domain = new URL(targetUrl).hostname.replace(/^www\./, ""); } catch(_) { domain = ""; }
 
-        // Serve from cache
-        const cached = getCached(targetUrl);
-        if (cached) {
-            console.log("[inline] cache hit");
-            await answer(buildResults(cached), { cache_time: 3600 });
+        const thumbUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        const downloadingText = l[lang] && l[lang].VIDEODL_DOWNLOADING ? l[lang].VIDEODL_DOWNLOADING : "⏳ Downloading...";
+
+        await TGbot.answerInlineQuery(queryId, [{
+            type:  "article",
+            id:    "dl",
+            title: "📥 Send video",
+            description: domain,
+            thumbnail_url: thumbUrl,
+            thumbnail_width:  64,
+            thumbnail_height: 64,
+            input_message_content: {
+                message_text: downloadingText,
+            },
+        }], { cache_time: 0, is_personal: true }).catch(() => {});
+    });
+
+    // ── chosen_inline_result: download, then edit the sent message ────────
+    TGbot.on("chosen_inline_result", async (chosen) => {
+        const inlineMsgId = chosen.inline_message_id;
+        const userId      = chosen.from.id;
+        const query       = chosen.query || "";
+
+        // inline_message_id is only present when Inline Feedback is enabled (100%) in BotFather
+        if (!inlineMsgId) {
+            console.log("[inline] chosen_inline_result: no inline_message_id (enable Inline Feedback in BotFather)");
             return;
         }
 
-        // Upload target: configured dump chat, else user's own DM (requires /start)
-        const uploadChatId = dumpChatId || userId;
+        const lang = userLang(userId);
+        const txt  = (key) => (l[lang] && l[lang][key]) ? l[lang][key] : key;
 
-        // Race download against Telegram's inline timeout
-        const downloadPromise = downloadAndUpload(TGbot, targetUrl, uploadChatId);
-        const timeoutPromise  = new Promise((_, rej) =>
-            setTimeout(() => rej(new Error("timeout")), INLINE_ANSWER_TIMEOUT_MS));
+        const editText = (text) => TGbot.editMessageText(text, {
+            inline_message_id: inlineMsgId,
+            parse_mode: "HTML",
+        }).catch(() => {});
+
+        const editMedia = ({ fileId, isAudio, title }) => TGbot.editMessageMedia(
+            isAudio
+                ? { type: "audio", media: fileId, title: title.slice(0, 300) }
+                : { type: "video", media: fileId, caption: title.slice(0, 1024), supports_streaming: true },
+            { inline_message_id: inlineMsgId }
+        ).catch(() => {});
+
+        const targetUrl = findSupportedUrl(extractUrlsFromText(query));
+        if (!targetUrl) { await editText("❌"); return; }
+
+        console.log("[inline] chosen result for", targetUrl, "by user", userId);
+
+        // Serve from cache
+        const cached = getCached(targetUrl);
+        if (cached) { await editMedia(cached); return; }
+
+        // Dedup: if already downloading this URL, wait for the same promise
+        const uploadChatId = dumpChatId || userId;
+        if (!pendingByUrl.has(targetUrl)) {
+            const p = downloadAndUpload(TGbot, targetUrl, uploadChatId)
+                .then(r => { setCache(targetUrl, r); return r; })
+                .finally(() => pendingByUrl.delete(targetUrl));
+            pendingByUrl.set(targetUrl, p);
+        }
 
         try {
-            const result = await Promise.race([downloadPromise, timeoutPromise]);
-            setCache(targetUrl, result);
-            await answer(buildResults(result), { cache_time: 3600 });
+            const result = await pendingByUrl.get(targetUrl);
+            await editMedia(result);
         } catch (err) {
-            if (err.message === "timeout") {
-                // Download continues in background; tell user to try again shortly
-                console.log("[inline] timeout — download continues in background for", targetUrl);
-                await answer([], {
-                    cache_time: 0,
-                    switch_pm_text: "⏳ Still downloading — try again in a moment",
-                    switch_pm_parameter: "inline_wait",
-                });
-                downloadPromise
-                    .then(r  => { setCache(targetUrl, r); console.log("[inline] background cache ready:", targetUrl); })
-                    .catch(e => console.log("[inline] background download failed:", e.message));
-            } else {
-                console.log("[inline] error:", err.message);
-                await answer([], { cache_time: 0 });
-            }
+            console.log("[inline] download failed:", err.message);
+            const msg = err.message === "too_long"  ? txt("VIDEODL_TOO_LONG")  :
+                        err.message === "too_large" ? txt("VIDEODL_TOO_LARGE") :
+                        txt("VIDEODL_ERROR");
+            await editText(msg);
         }
     });
 }
