@@ -106,8 +106,9 @@ async function main()
     
     //unload management
     var quitFunc = ()=>{
-        // best-effort save; main database unload is per instance via plugin contexts
         TR.save();
+        // Flush all in-memory chat data to disk before exit
+        if (global.LGHSaveAll) global.LGHSaveAll.forEach(fn => { try { fn(); } catch(_) {} });
         process.exit(0);
     }
     process.on('SIGINT', quitFunc);  // CTRL+C

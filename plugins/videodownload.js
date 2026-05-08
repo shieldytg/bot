@@ -83,20 +83,30 @@ function ytDlpInfo(url) {
 
 function ytDlpRun(url, outTemplate, extraArgs) {
     return new Promise((resolve, reject) => {
+        let stderr = "";
         const p = spawn("yt-dlp", ["--no-playlist", ...extraArgs, "-o", outTemplate, url]);
+        p.stderr.on("data", d => { stderr += d; });
         p.on("close", code => {
-            if (code !== 0) reject(new Error("yt-dlp exit code " + code));
+            if (stderr) console.log("[videodownload] yt-dlp stderr:", stderr.slice(0, 800));
+            if (code !== 0) reject(new Error("yt-dlp exit " + code + ": " + stderr.slice(0, 300)));
             else resolve();
         });
         p.on("error", reject);
     });
 }
 
+const VIDEO_EXTS = [".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".ts"];
+const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
+
 function firstFileIn(dir) {
     try {
         const skip = [".part", ".ytdl", ".jpg", ".jpeg", ".png", ".webp", ".json", ".description"];
-        const files = fs.readdirSync(dir).filter(f => !skip.some(ext => f.endsWith(ext)));
-        return files.length ? path.join(dir, files[0]) : null;
+        const files = fs.readdirSync(dir).filter(f => !skip.some(e => f.endsWith(e)));
+        console.log("[videodownload] files in tmpDir:", files);
+        if (!files.length) return null;
+        // Prefer video files — yt-dlp may leave intermediate audio shards alongside the merged mp4
+        const video = files.find(f => VIDEO_EXTS.some(e => f.endsWith(e)));
+        return path.join(dir, video || files[0]);
     } catch (_) { return null; }
 }
 
@@ -152,7 +162,9 @@ function main(args) {
             }
 
             const maxHeight = durationMin < HIGH_QUALITY_THRESHOLD_MINUTES ? 1080 : 720;
-            const fmt = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${maxHeight}]+bestaudio/best[height<=${maxHeight}]/best`;
+            // With ffmpeg: merges best video+audio. Without ffmpeg: best[ext=mp4] picks a
+            // combined stream. Final /best catches any remaining format (audio-only included).
+            const fmt = `bestvideo[height<=${maxHeight}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${maxHeight}][ext=mp4]/best[height<=${maxHeight}]/best[ext=mp4]/best`;
 
             // Use %(ext)s so the real extension is always in the filename — no guessing
             await ytDlpRun(targetUrl, path.join(tmpDir, "output.%(ext)s"), [
@@ -171,7 +183,6 @@ function main(args) {
             }
 
             // Decide send method by the actual file extension yt-dlp produced
-            const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
             const ext = path.extname(actualPath).toLowerCase();
 
             if (AUDIO_EXTS.includes(ext)) {

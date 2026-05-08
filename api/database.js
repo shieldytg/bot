@@ -453,6 +453,7 @@ function getDatabase(config) {
                 if(chat.hasOwnProperty("media")) global.DBCHATS[chat.id].media = chat.media;
                 // Persist audio recognition settings if present
                 if(chat.hasOwnProperty("audio")) global.DBCHATS[chat.id].audio = chat.audio;
+                if(chat.hasOwnProperty("videodownload")) global.DBCHATS[chat.id].videodownload = chat.videodownload;
                 if(chat.hasOwnProperty("link")) global.DBCHATS[chat.id].link = chat.link;
 
                 global.DBCHATS[chat.id].lastUse = now;
@@ -604,6 +605,14 @@ function getDatabase(config) {
         }
 
     }
+
+    // Register a global save-all hook so the shutdown handler in index.js can flush
+    // everything to disk before exit, even if the periodic interval hasn't fired yet.
+    if (!global.LGHSaveAll) global.LGHSaveAll = [];
+    global.LGHSaveAll.push(() => {
+        var ids = Object.keys(global.DBCHATS);
+        ids.forEach((id) => database.chats.save(id));
+    });
 
     //save on disk every chat (preventing case of uncontrolled crash)
     setInterval( () => {
