@@ -215,6 +215,8 @@ function main(args) {
             thumbnail_width:  64,
             thumbnail_height: 64,
             input_message_content: { message_text: downloadingText },
+            // reply_markup is required for Telegram to include inline_message_id in chosen_inline_result
+            reply_markup: { inline_keyboard: [[{ text: "⏳", callback_data: "inline_loading" }]] },
         }], { cache_time: 0, is_personal: true }).catch(() => {});
     });
 
