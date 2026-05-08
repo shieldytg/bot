@@ -200,13 +200,14 @@ function main(args) {
 
     // ── chosen_inline_result: download, then edit the sent message ────────
     TGbot.on("chosen_inline_result", async (chosen) => {
+        console.log("[inline] chosen_inline_result fired, inline_message_id:", chosen.inline_message_id, "query:", chosen.query);
+
         const inlineMsgId = chosen.inline_message_id;
         const userId      = chosen.from.id;
         const query       = chosen.query || "";
 
-        // inline_message_id is only present when Inline Feedback is enabled (100%) in BotFather
         if (!inlineMsgId) {
-            console.log("[inline] chosen_inline_result: no inline_message_id (enable Inline Feedback in BotFather)");
+            console.log("[inline] ERROR: no inline_message_id — go to @BotFather → /setinlinefeedback → set 100%");
             return;
         }
 
@@ -216,25 +217,27 @@ function main(args) {
         const editText = (text) => TGbot.editMessageText(text, {
             inline_message_id: inlineMsgId,
             parse_mode: "HTML",
-        }).catch(() => {});
+        }).then(() => console.log("[inline] editMessageText OK"))
+          .catch(err => console.log("[inline] editMessageText ERROR:", err.response?.body?.description || err.message));
 
-        const editMedia = ({ fileId, isAudio, title }) => TGbot.editMessageMedia(
-            isAudio
+        const editMedia = ({ fileId, isAudio, title }) => {
+            const media = isAudio
                 ? { type: "audio", media: fileId, title: title.slice(0, 300) }
-                : { type: "video", media: fileId, caption: title.slice(0, 1024), supports_streaming: true },
-            { inline_message_id: inlineMsgId }
-        ).catch(() => {});
+                : { type: "video", media: fileId, caption: title.slice(0, 1024), supports_streaming: true };
+            console.log("[inline] calling editMessageMedia, isAudio:", isAudio, "fileId:", fileId.slice(0, 20) + "...");
+            return TGbot.editMessageMedia(media, { inline_message_id: inlineMsgId })
+                .then(() => console.log("[inline] editMessageMedia OK"))
+                .catch(err => console.log("[inline] editMessageMedia ERROR:", err.response?.body?.description || err.message));
+        };
 
         const targetUrl = findSupportedUrl(extractUrlsFromText(query));
-        if (!targetUrl) { await editText("❌"); return; }
+        if (!targetUrl) { console.log("[inline] no URL in query"); await editText("❌"); return; }
 
-        console.log("[inline] chosen result for", targetUrl, "by user", userId);
+        console.log("[inline] downloading for", targetUrl);
 
-        // Serve from cache
         const cached = getCached(targetUrl);
-        if (cached) { await editMedia(cached); return; }
+        if (cached) { console.log("[inline] cache hit"); await editMedia(cached); return; }
 
-        // Dedup: if already downloading this URL, wait for the same promise
         const uploadChatId = dumpChatId || userId;
         if (!pendingByUrl.has(targetUrl)) {
             const p = downloadAndUpload(TGbot, targetUrl, uploadChatId)
