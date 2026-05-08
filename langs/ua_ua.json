@@ -583,5 +583,18 @@
     "AUDIO_PLEASE_WAIT": "Зачекайте...",
     "AUDIO_MISSING_KEY": "Розпізнавання аудіо: відсутній API ключ. Додайте GEMINI_API_KEY в змінні середовища або geminiApiKey у config.json",
     "AUDIO_EMPTY_TRANSCRIPT": "Текст не розпізнано.",
-    "AUDIO_ERROR": "Помилка розпізнавання аудіо."
+    "AUDIO_ERROR": "Помилка розпізнавання аудіо.",
+    "/crypto": "COMMAND_CRYPTO",
+    "COMMAND_CRYPTO": "crypto",
+    "CMDDESC_CRYPTO": "/{name} SYMBOL\nShow current cryptocurrency price and market data (e.g. /crypto btc)",
+    "CRYPTO_NOT_FOUND": "❌ Cryptocurrency not found. Use a valid symbol like BTC, ETH, etc.",
+    "CRYPTO_USAGE": "❌ Usage: /crypto SYMBOL (e.g. /crypto btc)",
+    "/kickme": "COMMAND_KICKME",
+    "COMMAND_KICKME": "kickme",
+    "CMDDESC_KICKME": "/{name}\nKick yourself from the group",
+    "/banme": "COMMAND_BANME",
+    "COMMAND_BANME": "banme",
+    "CMDDESC_BANME": "/{name}\nBan yourself from the group",
+    "AUDIO_PROMPT": "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided file.\n\n**Crucial Instruction: You MUST completely ignore the visual stream of the file. Your task is NOT to describe the video.**\n\n- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n- **DO:** Maintain the original language of the speech.\n\n- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n- **DO NOT:** Analyze the camera work or shot composition.\n- **DO NOT:** Provide summaries, explanations, or any commentary.\n- **DO NOT:** Add headers, timestamps, or any formatting.\n\nReturn ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\".",
+    "NOT_ALLOWED": "You don't have permission to do that."
 }
