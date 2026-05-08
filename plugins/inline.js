@@ -177,12 +177,34 @@ function main(args) {
         const targetUrl = findSupportedUrl(extractUrlsFromText(text));
         if (!targetUrl) { await empty(); return; }
 
+        // If already cached — answer with real video immediately
+        const cached = getCached(targetUrl);
+        if (cached) {
+            console.log("[inline] inline_query cache hit:", targetUrl);
+            const results = cached.isAudio
+                ? [{ type: "audio", id: "1", audio_file_id: cached.fileId, title: cached.title || "Audio" }]
+                : [{ type: "video", id: "1", video_file_id: cached.fileId, title: cached.title || "Video" }];
+            await TGbot.answerInlineQuery(queryId, results, { cache_time: 3600 }).catch(() => {});
+            return;
+        }
+
+        // Kick off background download so it'll be ready on retry or for chosen_inline_result
+        const uploadChatId = dumpChatId || userId;
+        if (!pendingByUrl.has(targetUrl)) {
+            console.log("[inline] starting background download:", targetUrl);
+            const p = downloadAndUpload(TGbot, targetUrl, uploadChatId)
+                .then(r => { setCache(targetUrl, r); console.log("[inline] background download cached:", targetUrl); return r; })
+                .catch(e => console.log("[inline] background download failed:", e.message))
+                .finally(() => pendingByUrl.delete(targetUrl));
+            pendingByUrl.set(targetUrl, p);
+        }
+
         const lang = userLang(userId);
         let domain;
         try { domain = new URL(targetUrl).hostname.replace(/^www\./, ""); } catch(_) { domain = ""; }
 
         const thumbUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-        const downloadingText = l[lang] && l[lang].VIDEODL_DOWNLOADING ? l[lang].VIDEODL_DOWNLOADING : "⏳ Downloading...";
+        const downloadingText = (l[lang] && l[lang].VIDEODL_DOWNLOADING) || "⏳ Downloading...";
 
         await TGbot.answerInlineQuery(queryId, [{
             type:  "article",
@@ -192,9 +214,7 @@ function main(args) {
             thumbnail_url: thumbUrl,
             thumbnail_width:  64,
             thumbnail_height: 64,
-            input_message_content: {
-                message_text: downloadingText,
-            },
+            input_message_content: { message_text: downloadingText },
         }], { cache_time: 0, is_personal: true }).catch(() => {});
     });
 
