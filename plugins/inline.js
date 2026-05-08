@@ -16,7 +16,6 @@ const AUDIO_EXTS = [".mp3", ".m4a", ".aac", ".opus", ".ogg", ".flac", ".wav"];
 const MAX_FILE_BYTES             = 49 * 1024 * 1024;
 const LONG_VIDEO_MINUTES         = 60;
 const HIGH_QUALITY_THRESHOLD_MIN = 25;
-const CACHE_TTL                  = 3600 * 1000;
 
 // ── URL helpers ───────────────────────────────────────────────────────────
 function extractUrlsFromText(text) {
@@ -80,24 +79,39 @@ function rmDir(dir) {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
 }
 
-// ── Cache & dedup ─────────────────────────────────────────────────────────
-const resultCache    = new Map(); // url -> {fileId, isAudio, title, ts}
-const pendingByUrl   = new Map(); // url -> Promise<result>  (dedup concurrent requests)
+// ── Persistent cache ──────────────────────────────────────────────────────
+// Stored in database/{botId}/inline_cache.json as {url: {fileId, isAudio, title}}
+const resultCache  = new Map(); // url -> {fileId, isAudio, title}
+const pendingByUrl = new Map(); // url -> Promise<result>
+
+let _cacheFile = null;
+
+function loadCache(cacheFile) {
+    _cacheFile = cacheFile;
+    try {
+        if (!fs.existsSync(cacheFile)) return;
+        const data = JSON.parse(fs.readFileSync(cacheFile, "utf-8"));
+        for (const [url, entry] of Object.entries(data)) resultCache.set(url, entry);
+        console.log("[inline] loaded", resultCache.size, "cached file_ids from disk");
+    } catch (e) {
+        console.log("[inline] failed to load cache:", e.message);
+    }
+}
 
 function getCached(url) {
-    const e = resultCache.get(url);
-    if (!e || Date.now() - e.ts > CACHE_TTL) { resultCache.delete(url); return null; }
-    return e;
-}
-function setCache(url, data) {
-    resultCache.set(url, { ...data, ts: Date.now() });
+    return resultCache.get(url) || null;
 }
 
-// Clear entire cache every 2 hours
-setInterval(() => {
-    resultCache.clear();
-    console.log("[inline] cache cleared");
-}, 2 * 3600 * 1000);
+function setCache(url, data) {
+    resultCache.set(url, data);
+    if (!_cacheFile) return;
+    try {
+        const obj = Object.fromEntries(resultCache);
+        fs.writeFileSync(_cacheFile, JSON.stringify(obj));
+    } catch (e) {
+        console.log("[inline] failed to save cache:", e.message);
+    }
+}
 
 // ── Download → upload → return {fileId, isAudio, title} ──────────────────
 async function downloadAndUpload(TGbot, url, uploadChatId) {
@@ -167,6 +181,8 @@ function main(args) {
     const { TGbot, db, config } = GHbot;
     const l = global.LGHLangs;
     const dumpChatId = config.inlineDumpChatId || null;
+
+    loadCache(path.join(db.dir, "inline_cache.json"));
 
     function userLang(userId) {
         try { return (db.users.get(userId) || {}).lang || config.reserveLang; } catch(_) { return config.reserveLang; }
