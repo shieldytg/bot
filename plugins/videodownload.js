@@ -39,7 +39,8 @@ function extractUrls(msg) {
     const text = msg.text || msg.caption || "";
     const found = [];
 
-    const re = /https?:\/\/[^\s<>"'\]]+/gi;
+    // Match URLs with or without protocol prefix
+    const re = /(?:https?:\/\/)?(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:\/[^\s<>"'\]]*|\?[^\s<>"'\]]*)?/gi;
     let m;
     while ((m = re.exec(text)) !== null) found.push(m[0]);
 
@@ -54,11 +55,12 @@ function extractUrls(msg) {
 function findSupportedUrl(urls, sites) {
     for (const raw of urls) {
         try {
-            const host = new URL(raw).hostname.toLowerCase().replace(/^www\./, "");
+            const withProto = /^https?:\/\//i.test(raw) ? raw : "https://" + raw;
+            const host = new URL(withProto).hostname.toLowerCase().replace(/^www\./, "");
             for (const [key, info] of Object.entries(SITES)) {
                 if (!sites[key]) continue;
                 for (const h of info.hosts) {
-                    if (host === h || host.endsWith("." + h)) return raw;
+                    if (host === h || host.endsWith("." + h)) return withProto;
                 }
             }
         } catch (_) {}
