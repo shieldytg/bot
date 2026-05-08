@@ -608,5 +608,15 @@
     "TURN_ON_BUTTON": "✅ Enable",
     "TURN_OFF_BUTTON": "❌ Disable",
     "SET_PROMPT_BUTTON": "✏️ Set Custom Prompt",
-    "NOT_ALLOWED": "You don't have permission to do that."
+    "NOT_ALLOWED": "You don't have permission to do that.",
+
+    "S_VIDEODL_BUTTON": "📥 Video Download",
+    "VIDEODL_TITLE": "📥 Video Download",
+    "VIDEODL_DESCRIPTION": "Automatically download videos when a supported link is sent.\n\n• Status: {status}",
+    "VIDEODL_SITES_BUTTON": "🌐 Manage Sites",
+    "VIDEODL_SITES_TITLE": "🌐 Manage Sites",
+    "VIDEODL_DOWNLOADING": "⏳ Downloading...",
+    "VIDEODL_TOO_LONG": "❌ Video is too long (max 60 min)",
+    "VIDEODL_TOO_LARGE": "❌ File is too large to send via Telegram",
+    "VIDEODL_ERROR": "❌ Failed to download the video"
 }

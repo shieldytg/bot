@@ -596,5 +596,15 @@
     "COMMAND_BANME": "banme",
     "CMDDESC_BANME": "/{name}\nBan yourself from the group",
     "AUDIO_PROMPT": "You are a highly specialized audio-to-text transcription service. Your SOLE purpose is to accurately transcribe the spoken words from the audio track of the provided file.\n\n**Crucial Instruction: You MUST completely ignore the visual stream of the file. Your task is NOT to describe the video.**\n\n- **DO:** Listen to the audio and transcribe it word-for-word (verbatim).\n- **DO:** Maintain the original language of the speech.\n\n- **DO NOT:** Describe scenes, people, objects, actions, logos, or the environment.\n- **DO NOT:** Analyze the camera work or shot composition.\n- **DO NOT:** Provide summaries, explanations, or any commentary.\n- **DO NOT:** Add headers, timestamps, or any formatting.\n\nReturn ONLY the raw, plain transcribed text. If no speech is present, return \"[no speech]\".",
-    "NOT_ALLOWED": "You don't have permission to do that."
+    "NOT_ALLOWED": "You don't have permission to do that.",
+
+    "S_VIDEODL_BUTTON": "📥 Download de Vídeo",
+    "VIDEODL_TITLE": "📥 Download de Vídeo",
+    "VIDEODL_DESCRIPTION": "Baixa automaticamente vídeos quando um link suportado é enviado.\n\n• Status: {status}",
+    "VIDEODL_SITES_BUTTON": "🌐 Gerenciar Sites",
+    "VIDEODL_SITES_TITLE": "🌐 Gerenciar Sites",
+    "VIDEODL_DOWNLOADING": "⏳ Baixando...",
+    "VIDEODL_TOO_LONG": "❌ Vídeo muito longo (máx. 60 min)",
+    "VIDEODL_TOO_LARGE": "❌ Arquivo muito grande para enviar pelo Telegram",
+    "VIDEODL_ERROR": "❌ Erro ao baixar o vídeo"
 }

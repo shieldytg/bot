@@ -480,6 +480,8 @@ function genSettings2Keyboard(lang, chatId)
         [{text: l[lang].S_PERMS_BUTTON, callback_data: "S_PERMS_BUTTON:"+chatId}/*,
         {text: l[lang].S_LOGC_BUTTON, callback_data: "S_LOGC_BUTTON:"+chatId}*/],
 
+        [{text: l[lang].S_VIDEODL_BUTTON, callback_data: "S_VIDEODL_BUTTON:"+chatId}],
+
         [{text: l[lang].BACK2_BUTTON, callback_data: "SETTINGS_HERE:"+chatId},
         {text: l[lang].S_CLOSE_BUTTON, callback_data: "S_CLOSE_BUTTON:"+chatId},
         {text: l[lang].FLAG + "Lang", callback_data: "LANGS_BUTTON:"+chatId}],
