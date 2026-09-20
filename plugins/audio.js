@@ -281,9 +281,12 @@ function main(args) {
             }
             
             const body = buildGeminiRequest(prompt, base64, mime);
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelInUse}:generateContent?key=${apiKey}`;
+
+            // Get API base URL from config or use default
+            const apiBaseUrl = (config && config.geminiApiBaseUrl) || "https://generativelanguage.googleapis.com";
+            const endpoint = `${apiBaseUrl}/v1beta/models/${modelInUse}:generateContent?key=${apiKey}`;
             const t0 = Date.now();
-            console.log(`[audio] Sending request to Gemini: model=${modelInUse} promptLen=${(prompt||"").length}`);
+            console.log(`[audio] Sending request to Gemini: model=${modelInUse} promptLen=${(prompt||"").length} baseUrl=${apiBaseUrl}`);
 
             let resp;
             try {
